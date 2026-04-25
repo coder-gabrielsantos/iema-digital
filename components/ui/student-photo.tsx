@@ -6,6 +6,8 @@ interface StudentPhotoProps extends React.HTMLAttributes<HTMLDivElement> {
   photoData?: string;
   photoMime?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** When true (default), the image is only mounted near the viewport to avoid decoding many base64 photos at once. */
+  lazy?: boolean;
 }
 
 const sizeClasses = {
@@ -39,30 +41,66 @@ export function StudentPhoto({
   photoData,
   photoMime = 'image/jpeg',
   size = 'md',
+  lazy = true,
   className,
   ...props
 }: StudentPhotoProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const hasPhoto = Boolean(photoData && photoData.length > 10);
+  const [revealed, setRevealed] = React.useState(!lazy);
   const initials = getInitials(name);
   const color = stringToColor(name);
 
+  React.useEffect(() => {
+    if (!lazy) {
+      setRevealed(true);
+      return;
+    }
+    if (!hasPhoto) return;
+
+    const node = containerRef.current;
+    if (!node) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setRevealed(true);
+          io.disconnect();
+        }
+      },
+      { root: null, rootMargin: '96px', threshold: 0 }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [lazy, hasPhoto, photoData]);
+
+  const showImage = hasPhoto && revealed;
+  const showPlaceholder = hasPhoto && lazy && !revealed;
+
   return (
     <div
+      ref={containerRef}
       className={cn(
         'relative flex flex-shrink-0 items-center justify-center rounded-full overflow-hidden',
         sizeClasses[size],
         !hasPhoto && 'font-bold text-white shadow-sm shadow-indigo-950/20',
+        showPlaceholder && 'bg-slate-200',
         className
       )}
       style={!hasPhoto ? { backgroundColor: color } : undefined}
       {...props}
     >
-      {hasPhoto ? (
+      {showPlaceholder ? (
+        <span className="absolute inset-0 animate-pulse bg-slate-300/50" aria-hidden />
+      ) : null}
+      {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`data:${photoMime};base64,${photoData}`}
           alt={name}
-          className="h-full w-full object-cover"
+          loading={lazy ? 'lazy' : 'eager'}
+          decoding="async"
+          className="relative z-[1] h-full w-full object-cover"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = 'none';
             (e.currentTarget.nextSibling as HTMLElement).style.display = 'flex';

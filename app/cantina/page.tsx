@@ -279,6 +279,7 @@ export default function CantinaPage() {
                   photoData={result.student.photoData}
                   photoMime={result.student.photoMime}
                   size="xl"
+                  lazy={false}
                   className="ring-4 ring-white shadow-md"
                 />
                 <div className="flex-1 min-w-0">
@@ -304,6 +305,7 @@ export default function CantinaPage() {
                   photoData={result.student.photoData}
                   photoMime={result.student.photoMime}
                   size="xl"
+                  lazy={false}
                   className="ring-4 ring-red-200 shadow-md"
                 />
                 <div className="flex-1 min-w-0">
