@@ -60,6 +60,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Avoid duplicate password toggle icon on Edge/IE */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}
+
 * {
   box-sizing: border-box;
   border-color: var(--border);

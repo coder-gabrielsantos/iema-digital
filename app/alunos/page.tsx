@@ -19,6 +19,7 @@ interface Student {
   name: string;
   classCode: string;
   photoMime: string;
+  photoData?: string;
   isPresent: boolean;
 }
 
@@ -279,6 +280,7 @@ export default function AlunosPage() {
                     <div className="col-span-2 flex items-center gap-3 min-w-0 md:col-span-1">
                       <StudentPhoto
                         name={student.name}
+                        photoData={student.photoData}
                         photoMime={student.photoMime}
                         size="md"
                       />

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       ];
     }
     const students = await Student.find(query)
-      .select('-photoData')
+      .select('name classCode photoMime')
       .sort({ name: 1 })
       .lean();
 
@@ -47,7 +47,16 @@ export async function GET(req: NextRequest) {
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
     const safePage = Math.min(page, totalPages);
     const start = (safePage - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
+    const pageItems = filtered.slice(start, start + pageSize);
+    const pageIds = pageItems.map((student) => student._id);
+    const pagePhotos = await Student.find({ _id: { $in: pageIds } })
+      .select('_id photoData')
+      .lean();
+    const photoMap = new Map(pagePhotos.map((student) => [student._id.toString(), student.photoData]));
+    const items = pageItems.map((student) => ({
+      ...student,
+      photoData: photoMap.get(student._id.toString()) || '',
+    }));
 
     return NextResponse.json({
       items,
