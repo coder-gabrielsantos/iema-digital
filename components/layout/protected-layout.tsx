@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Navbar } from './navbar';
-import { UserRole } from '@/lib/utils';
+import { UserRole } from '@/lib/auth-keys';
 
 interface ProtectedLayoutProps {
   children: React.ReactNode;
