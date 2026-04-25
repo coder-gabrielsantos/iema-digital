@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { CheckCircle2, XCircle, LogIn, LogOut, Keyboard, QrCode, Pause, Play } from 'lucide-react';
+import { XCircle, LogIn, LogOut, Keyboard, QrCode, Pause, Play } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { StudentPhoto } from '@/components/ui/student-photo';
 import { formatTime } from '@/lib/utils';
 
@@ -170,7 +169,7 @@ export default function PortariaPage() {
                 Registro manual
               </CardTitle>
             </CardHeader>
-            <CardContent className="bg-white px-4 pb-4 pt-3">
+            <CardContent className="bg-white px-4 py-4">
               <form onSubmit={handleManualSubmit} className="flex gap-2">
                 <Input
                   placeholder="Nome do aluno"
@@ -203,56 +202,59 @@ export default function PortariaPage() {
 
         {status === 'success' && result && (
           <Card
-            className={`rounded-md border-2 shadow-none ${
+            className={`overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ${
               result.type === 'entry'
-                ? 'border-emerald-300 bg-emerald-50'
-                : 'border-amber-300 bg-amber-50'
+                ? 'ring-1 ring-emerald-500/15'
+                : 'ring-1 ring-amber-500/15'
             }`}
           >
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="relative">
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex gap-4 sm:gap-5">
+                <div className="relative shrink-0">
                   <StudentPhoto
                     name={result.student.name}
                     photoData={result.student.photoData}
                     photoMime={result.student.photoMime}
                     size="xl"
-                    className="ring-4 ring-white shadow-md"
+                    lazy={false}
+                    className="ring-1 ring-slate-100"
                   />
                   <div
-                    className={`absolute -bottom-1 -right-1 rounded-full p-1.5 ${
-                      result.type === 'entry' ? 'bg-emerald-500' : 'bg-amber-500'
+                    className={`absolute bottom-1 right-1 z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white shadow-sm ${
+                      result.type === 'entry' ? 'bg-emerald-600' : 'bg-amber-500'
                     }`}
                   >
                     {result.type === 'entry' ? (
-                      <LogIn className="h-3.5 w-3.5 text-white" />
+                      <LogIn className="h-3 w-3 text-white" strokeWidth={2.25} />
                     ) : (
-                      <LogOut className="h-3.5 w-3.5 text-white" />
+                      <LogOut className="h-3 w-3 text-white" strokeWidth={2.25} />
                     )}
                   </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle2
-                      className={`h-5 w-5 flex-shrink-0 ${
-                        result.type === 'entry' ? 'text-emerald-600' : 'text-amber-600'
-                      }`}
-                    />
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center gap-2">
                     <span
-                      className={`font-bold text-lg ${
-                        result.type === 'entry' ? 'text-emerald-700' : 'text-amber-700'
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        result.type === 'entry' ? 'bg-emerald-500' : 'bg-amber-500'
                       }`}
-                    >
-                      {result.type === 'entry' ? 'Entrada Autorizada' : 'Saída Registrada'}
+                      aria-hidden
+                    />
+                    <p className="text-sm text-slate-500">
+                      {result.type === 'entry' ? 'Entrada autorizada' : 'Saída registrada'}
+                    </p>
+                  </div>
+                  <p className="truncate text-2xl font-normal tracking-tight text-slate-900 sm:text-[1.65rem] sm:leading-snug">
+                    {result.student.name}
+                  </p>
+                  <p className="mt-3 font-mono text-[11px] leading-relaxed text-slate-400 sm:text-xs">
+                    <span className="break-all">{result.student.studentId}</span>
+                    <span className="mx-1.5 text-slate-300" aria-hidden>
+                      ·
                     </span>
-                  </div>
-                  <p className="text-slate-900 font-semibold text-xl truncate">{result.student.name}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="default">Turma {result.student.classCode}</Badge>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500 font-mono">
-                    {result.student.studentId} · {formatTime(result.timestamp)}
+                    <span className="whitespace-nowrap text-slate-500 tabular-nums">
+                      {formatTime(result.timestamp)}
+                    </span>
                   </p>
                 </div>
               </div>

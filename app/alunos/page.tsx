@@ -266,18 +266,20 @@ export default function AlunosPage() {
               </div>
             ) : (
               <div>
-                <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-6 py-3 border-b border-slate-100 text-xs font-medium text-slate-400 uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-[1fr_auto] gap-4 px-6 py-3 border-b border-slate-100 text-xs font-medium text-slate-400 uppercase tracking-wide">
                   <span>Aluno</span>
-                  <span>Turma</span>
                   <span>Status</span>
-                  <span>QR Code</span>
                 </div>
                 {visibleStudents.map((student) => (
-                  <div
+                  <button
                     key={student._id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors sm:px-6 sm:py-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-center md:gap-4"
+                    type="button"
+                    disabled={loadingQr}
+                    aria-label={`Ver QR Code de ${student.name}`}
+                    onClick={() => void openQr(student)}
+                    className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-x-0 border-t-0 border-b border-slate-100 bg-white px-4 py-3 text-left last:border-b-0 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:cursor-wait disabled:opacity-60 sm:px-6 sm:py-4 md:grid-cols-[1fr_auto] md:gap-4"
                   >
-                    <div className="col-span-2 flex items-center gap-3 min-w-0 md:col-span-1">
+                    <div className="flex min-w-0 items-center gap-3">
                       <StudentPhoto
                         name={student.name}
                         photoData={student.photoData}
@@ -285,17 +287,15 @@ export default function AlunosPage() {
                         size="md"
                       />
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900 truncate text-[15px] sm:text-base">
+                        <p className="truncate text-lg text-slate-900 sm:text-xl">
                           {student.name}
                         </p>
-                        <p className="text-xs text-slate-400 md:hidden">Turma {student.classCode}</p>
-                        <p className="text-[11px] text-slate-400 font-mono truncate max-w-[12.5rem] sm:max-w-xs">
+                        <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400 sm:text-xs max-w-[12.5rem] sm:max-w-xs">
                           {student._id}
                         </p>
                       </div>
                     </div>
-                    <span className="hidden md:block text-sm text-slate-600">{student.classCode}</span>
-                    <div className="justify-self-start md:justify-self-auto">
+                    <div className="justify-self-start md:justify-self-end">
                       {student.isPresent ? (
                         <Badge variant="success" className="w-fit">
                           Presente
@@ -306,14 +306,7 @@ export default function AlunosPage() {
                         </Badge>
                       )}
                     </div>
-                    <button
-                      onClick={() => openQr(student)}
-                      disabled={loadingQr}
-                      className="justify-self-end rounded-md px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
-                    >
-                      Ver QR
-                    </button>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -359,6 +352,7 @@ export default function AlunosPage() {
                 photoData={qrStudent.photoData}
                 photoMime={qrStudent.photoMime}
                 size="xl"
+                lazy={false}
                 className="mx-auto mb-4 ring-4 ring-slate-100"
               />
               <h3 className="font-bold text-slate-900 text-lg mb-0.5">{qrStudent.name}</h3>
