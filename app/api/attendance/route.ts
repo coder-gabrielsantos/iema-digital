@@ -6,6 +6,8 @@ import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getPresenceModel } from '@/lib/models/Presence';
 import { getTodayString } from '@/lib/utils';
 
+const STATUS_LOCK_WINDOW_MS = 5 * 60 * 1000;
+
 export async function POST(req: NextRequest) {
   const [studentsConn, platformConn] = await Promise.all([
     connectStudentsDB(),
@@ -64,6 +66,26 @@ export async function POST(req: NextRequest) {
   const currentPresence = await Presence.findOne({ studentId: student._id.toString() }).lean();
   const currentlyPresent = Boolean(currentPresence?.isPresent);
   const type = currentlyPresent ? 'exit' : 'entry';
+  const now = new Date();
+  const lastStatusUpdate =
+    currentPresence?.updatedAt instanceof Date
+      ? currentPresence.updatedAt
+      : currentPresence?.updatedAt
+      ? new Date(currentPresence.updatedAt)
+      : null;
+
+  if (lastStatusUpdate && now.getTime() - lastStatusUpdate.getTime() < STATUS_LOCK_WINDOW_MS) {
+    return NextResponse.json({
+      success: true,
+      blockedByTimeWindow: true,
+      student: {
+        studentId: student._id.toString(),
+        name: student.name,
+        classCode: student.classCode,
+        isPresent: currentlyPresent,
+      },
+    });
+  }
 
   await Promise.all([
     Attendance.create({
@@ -71,7 +93,7 @@ export async function POST(req: NextRequest) {
       studentName: student.name,
       classCode: student.classCode,
       type,
-      timestamp: new Date(),
+      timestamp: now,
       date: getTodayString(),
     }),
     Presence.findOneAndUpdate(

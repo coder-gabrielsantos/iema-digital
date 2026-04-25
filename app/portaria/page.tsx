@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { XCircle, LogIn, LogOut, Keyboard, QrCode, Pause, Play, Loader2 } from 'lucide-react';
+import { XCircle, LogIn, LogOut, Keyboard, QrCode, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,7 @@ const DEBOUNCE_MS = 3000;
 const TOAST_TTL_MS = 4000;
 
 export default function PortariaPage() {
-  const [scannerActive, setScannerActive] = useState(true);
+  const [scannerActive, setScannerActive] = useState(false);
   const [manualName, setManualName] = useState('');
   const [inputMode, setInputMode] = useState<'camera' | 'manual'>('camera');
   const [toasts, setToasts] = useState<ScanToast[]>([]);
@@ -93,7 +93,7 @@ export default function PortariaPage() {
             prev.map((t) =>
               t.id !== toastId
                 ? t
-                : res.ok
+                : res.ok && !data.blockedByTimeWindow
                 ? {
                     ...t,
                     status: 'success',
@@ -101,7 +101,16 @@ export default function PortariaPage() {
                     classCode: data.student.classCode,
                     type: data.type,
                   }
-                : { ...t, status: 'error', name: '—', error: data.error || 'Erro' }
+                : {
+                    ...t,
+                    status: 'error',
+                    name: '—',
+                    error:
+                      data.error ||
+                      (data.blockedByTimeWindow
+                        ? 'Aguarde 5 minutos para alterar o status novamente'
+                        : 'Erro'),
+                  }
             )
           );
         }
@@ -158,7 +167,7 @@ export default function PortariaPage() {
               <button
                 onClick={() => {
                   setInputMode('camera');
-                  setScannerActive(true);
+                  setScannerActive(false);
                 }}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${
                   inputMode === 'camera'
@@ -187,40 +196,20 @@ export default function PortariaPage() {
           </div>
 
           {/* Camera */}
-          {inputMode === 'camera' && (
-            <div className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
-              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-                <p className="text-xs font-medium tracking-wide text-slate-400">
-                  Posicione o QR Code no centro da câmera
-                </p>
-                <button
-                  onClick={() => setScannerActive(!scannerActive)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                    scannerActive
-                      ? 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                      : 'border-indigo-500 bg-indigo-500 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600'
-                  }`}
-                >
-                  {scannerActive ? (
-                    <>
-                      <Pause className="h-3 w-3" /> Pausar
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-3 w-3" /> Iniciar
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="bg-white px-4 pb-4 pt-3">
-                <QrScanner
-                  onScan={handleScan}
-                  active={scannerActive}
-                  feedbackToken={scanFeedbackToken}
-                />
-              </div>
+          <div
+            className={`mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium ${
+              inputMode === 'camera' ? 'block' : 'hidden'
+            }`}
+          >
+            <div className="bg-white p-0">
+              <QrScanner
+                onScan={handleScan}
+                active={scannerActive}
+                feedbackToken={scanFeedbackToken}
+                onRequestStart={() => setScannerActive(true)}
+              />
             </div>
-          )}
+          </div>
 
           {/* Manual */}
           {inputMode === 'manual' && (
@@ -247,18 +236,6 @@ export default function PortariaPage() {
                     Verificar
                   </Button>
                 </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Scan results queue */}
-          {toasts.length === 0 && (
-            <Card className="mt-2 rounded-md shadow-none">
-              <CardContent className="p-6 text-center">
-                <QrCode className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                <p className="text-sm text-slate-400">
-                  {inputMode === 'camera' ? 'Aponte para o QR do aluno' : 'Digite o nome do aluno'}
-                </p>
               </CardContent>
             </Card>
           )}

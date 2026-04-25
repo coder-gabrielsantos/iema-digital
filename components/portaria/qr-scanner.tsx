@@ -1,32 +1,62 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CameraOff, Check } from 'lucide-react';
+import { CameraOff, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QrScannerProps {
   onScan: (data: string) => void;
   active: boolean;
   feedbackToken?: number;
+  onRequestStart?: () => void;
 }
 
-export function QrScanner({ onScan, active, feedbackToken = 0 }: QrScannerProps) {
+export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }: QrScannerProps) {
   const scannerRef = useRef<{
     stop: () => void | Promise<void>;
     clear: () => void | Promise<void>;
     isScanning?: boolean;
   } | null>(null);
   const [error, setError] = useState('');
-  const [started, setStarted] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
-  const [showScanFeedback, setShowScanFeedback] = useState(false);
+  const onScanRef = useRef(onScan);
 
   useEffect(() => {
-    if (!active || feedbackToken === 0) return;
-    setShowScanFeedback(true);
-    const timeout = setTimeout(() => setShowScanFeedback(false), 350);
-    return () => clearTimeout(timeout);
-  }, [active, feedbackToken]);
+    onScanRef.current = onScan;
+  }, [onScan]);
+
+  function isIgnorableStartError(error: unknown): boolean {
+    const message = getErrorMessage(error);
+    return (
+      message.includes('play() request was interrupted') ||
+      message.includes('media was removed from the document')
+    );
+  }
+
+  function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message.toLowerCase();
+    if (typeof error === 'string') return error.toLowerCase();
+    return '';
+  }
+
+  async function cleanupScanner(
+    scanner: { stop: () => void | Promise<void>; clear: () => void | Promise<void> } | null
+  ) {
+    if (!scanner) return;
+
+    // html5-qrcode requires stopping before clearing the instance.
+    try {
+      await Promise.resolve(scanner.stop());
+    } catch {
+      // Ignore: stop can fail when scanner never fully started.
+    }
+
+    try {
+      await Promise.resolve(scanner.clear());
+    } catch {
+      // Ignore: clear can fail when the DOM node was already disposed.
+    }
+  }
 
   useEffect(() => {
     setError('');
@@ -34,13 +64,9 @@ export function QrScanner({ onScan, active, feedbackToken = 0 }: QrScannerProps)
     if (!active) {
       const currentScanner = scannerRef.current;
       if (currentScanner) {
-        if (currentScanner.isScanning) {
-          void Promise.resolve(currentScanner.stop()).catch(() => {});
-        }
-        void Promise.resolve(currentScanner.clear()).catch(() => {});
+        void cleanupScanner(currentScanner);
         scannerRef.current = null;
       }
-      setStarted(false);
       return;
     }
 
@@ -69,22 +95,20 @@ export function QrScanner({ onScan, active, feedbackToken = 0 }: QrScannerProps)
             fps: 10,
             qrbox: { width: 250, height: 250 },
           },
-          (result: string) => onScan(result),
+          (result: string) => onScanRef.current(result),
           () => {}
         );
 
         if (!mounted) {
-          await Promise.resolve(html5QrCode.stop()).catch(() => {});
-          await Promise.resolve(html5QrCode.clear()).catch(() => {});
+          await cleanupScanner(html5QrCode);
           return;
         }
 
-        setStarted(true);
         setError('');
       } catch (e) {
-        console.error(e);
+        if (isIgnorableStartError(e)) return;
+        // Keeps scanner failures silent in UI logs during camera re-init races.
         setError('Não foi possível iniciar a câmera. Verifique as permissões.');
-        setStarted(false);
       }
     }
 
@@ -94,15 +118,11 @@ export function QrScanner({ onScan, active, feedbackToken = 0 }: QrScannerProps)
       mounted = false;
       const currentScanner = scannerRef.current;
       if (currentScanner) {
-        if (currentScanner.isScanning) {
-          void Promise.resolve(currentScanner.stop()).catch(() => {});
-        }
-        void Promise.resolve(currentScanner.clear()).catch(() => {});
+        void cleanupScanner(currentScanner);
         scannerRef.current = null;
       }
-      setStarted(false);
     };
-  }, [active, onScan, retryToken]);
+  }, [active, retryToken]);
 
   if (error) {
     return (
@@ -116,21 +136,27 @@ export function QrScanner({ onScan, active, feedbackToken = 0 }: QrScannerProps)
     );
   }
 
+  if (!active) {
+    return (
+      <div className="flex min-h-[360px] items-center justify-center bg-slate-50">
+        <Button
+          type="button"
+          onClick={onRequestStart}
+          className="h-10 rounded-full bg-indigo-500 px-5 text-white hover:bg-indigo-600"
+        >
+          <Play className="mr-2 h-4 w-4" />
+          Abrir câmera
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full">
-      <div id="qr-reader" className="w-full" />
-      {showScanFeedback && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <div className="rounded-full border border-emerald-200 bg-white/95 p-3 shadow-lg">
-            <Check className="h-8 w-8 text-emerald-500" strokeWidth={2.5} />
-          </div>
-        </div>
-      )}
-      {!started && active && (
-        <div className="flex h-48 items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-100 border-t-indigo-600" />
-        </div>
-      )}
+      <div
+        id="qr-reader"
+        className="w-full min-h-[360px] [&>div]:!border-0 [&_video]:!h-[360px] [&_video]:!w-full [&_video]:object-cover"
+      />
     </div>
   );
 }

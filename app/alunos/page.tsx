@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   Search,
   RefreshCw,
@@ -53,6 +53,9 @@ export default function AlunosPage() {
   const [filteredCount, setFilteredCount] = useState(0);
   const [qrStudent, setQrStudent] = useState<StudentDetail | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
+  const [refreshSpinning, setRefreshSpinning] = useState(true);
+  const refreshSpinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshSpinStartedAtRef = useRef(Date.now());
 
   const normalizedSearch = search.trim().toLowerCase();
   const visibleStudents = useMemo(() => {
@@ -122,6 +125,38 @@ export default function AlunosPage() {
     return () => clearTimeout(timer);
   }, [fetchStudents, fetchDashboard, page]);
 
+  useEffect(() => {
+    if (loading) {
+      if (refreshSpinTimeoutRef.current) {
+        clearTimeout(refreshSpinTimeoutRef.current);
+        refreshSpinTimeoutRef.current = null;
+      }
+      refreshSpinStartedAtRef.current = Date.now();
+      setRefreshSpinning(true);
+      return;
+    }
+
+    const elapsed = Date.now() - refreshSpinStartedAtRef.current;
+    const remaining = Math.max(0, 1000 - elapsed);
+
+    if (remaining === 0) {
+      setRefreshSpinning(false);
+      return;
+    }
+
+    refreshSpinTimeoutRef.current = setTimeout(() => {
+      setRefreshSpinning(false);
+      refreshSpinTimeoutRef.current = null;
+    }, remaining);
+
+    return () => {
+      if (refreshSpinTimeoutRef.current) {
+        clearTimeout(refreshSpinTimeoutRef.current);
+        refreshSpinTimeoutRef.current = null;
+      }
+    };
+  }, [loading]);
+
   async function openQr(student: Student) {
     setLoadingQr(true);
     try {
@@ -151,8 +186,13 @@ export default function AlunosPage() {
               Lista unificada com presença em tempo real para acompanhamento da administração
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={refreshAll} loading={loading}>
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshAll}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshSpinning ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
         </div>
@@ -287,7 +327,7 @@ export default function AlunosPage() {
                         size="md"
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-lg text-slate-900 sm:text-xl">
+                        <p className="truncate text-base text-slate-900 sm:text-lg">
                           {student.name}
                         </p>
                         <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400 sm:text-xs max-w-[12.5rem] sm:max-w-xs">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { CheckCircle2, XCircle, UtensilsCrossed, Keyboard, QrCode, RefreshCw, Pause, Play } from 'lucide-react';
+import { CheckCircle2, XCircle, Keyboard, QrCode, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,8 +37,9 @@ export default function CantinaPage() {
   const [presentCount, setPresentCount] = useState(0);
   const [todayMeals, setTodayMeals] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [refreshSpinning, setRefreshSpinning] = useState(true);
 
-  const [scannerActive, setScannerActive] = useState(true);
+  const [scannerActive, setScannerActive] = useState(false);
   const [manualName, setManualName] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<MealResult | null>(null);
@@ -46,6 +47,8 @@ export default function CantinaPage() {
   const [inputMode, setInputMode] = useState<'camera' | 'manual'>('camera');
   const processingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const refreshSpinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshSpinStartedAtRef = useRef(Date.now());
 
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
@@ -74,6 +77,38 @@ export default function CantinaPage() {
       clearInterval(interval);
     };
   }, [fetchStats]);
+
+  useEffect(() => {
+    if (loadingStats) {
+      if (refreshSpinTimeoutRef.current) {
+        clearTimeout(refreshSpinTimeoutRef.current);
+        refreshSpinTimeoutRef.current = null;
+      }
+      refreshSpinStartedAtRef.current = Date.now();
+      setRefreshSpinning(true);
+      return;
+    }
+
+    const elapsed = Date.now() - refreshSpinStartedAtRef.current;
+    const remaining = Math.max(0, 1000 - elapsed);
+
+    if (remaining === 0) {
+      setRefreshSpinning(false);
+      return;
+    }
+
+    refreshSpinTimeoutRef.current = setTimeout(() => {
+      setRefreshSpinning(false);
+      refreshSpinTimeoutRef.current = null;
+    }, remaining);
+
+    return () => {
+      if (refreshSpinTimeoutRef.current) {
+        clearTimeout(refreshSpinTimeoutRef.current);
+        refreshSpinTimeoutRef.current = null;
+      }
+    };
+  }, [loadingStats]);
 
   const processStudentInput = useCallback(
     async (value: string, mode: 'id' | 'name') => {
@@ -144,8 +179,13 @@ export default function CantinaPage() {
               Valide o QR para registrar refeição
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchStats} loading={loadingStats}>
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchStats}
+            disabled={loadingStats}
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshSpinning ? 'animate-spin' : ''}`} />
             Atualizar Contagem
           </Button>
         </div>
@@ -168,7 +208,7 @@ export default function CantinaPage() {
               ) : (
                 <p className="text-2xl font-bold text-slate-900">{todayMeals}</p>
               )}
-              <p className="mt-0.5 text-xs text-slate-500">Refeições Hoje</p>
+              <p className="mt-0.5 text-xs text-slate-500">Refeições hoje</p>
             </CardContent>
           </Card>
         </div>
@@ -181,7 +221,7 @@ export default function CantinaPage() {
           />
           <div className="relative z-10 flex">
           <button
-            onClick={() => { setInputMode('camera'); setScannerActive(true); }}
+            onClick={() => { setInputMode('camera'); setScannerActive(false); }}
             className={`flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${
               inputMode === 'camera'
                 ? 'text-indigo-600'
@@ -207,27 +247,12 @@ export default function CantinaPage() {
 
         {inputMode === 'camera' && (
           <div className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-              <p className="text-xs font-medium tracking-wide text-slate-400">
-                Posicione o QR Code no centro da câmera
-              </p>
-              <button
-                onClick={() => setScannerActive(!scannerActive)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                  scannerActive
-                    ? 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                    : 'border-indigo-500 bg-indigo-500 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600'
-                }`}
-              >
-                {scannerActive ? (
-                  <><Pause className="h-3 w-3" /> Pausar</>
-                ) : (
-                  <><Play className="h-3 w-3" /> Iniciar</>
-                )}
-              </button>
-            </div>
-            <div className="bg-white px-4 pb-4 pt-3">
-              <QrScanner onScan={handleScan} active={scannerActive} />
+            <div className="bg-white p-0">
+              <QrScanner
+                onScan={handleScan}
+                active={scannerActive}
+                onRequestStart={() => setScannerActive(true)}
+              />
             </div>
           </div>
         )}
@@ -334,18 +359,6 @@ export default function CantinaPage() {
           </Card>
         )}
 
-        {status === 'idle' && (
-          <Card className="mt-2 rounded-md shadow-none">
-            <CardContent className="p-6 text-center">
-            <UtensilsCrossed className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-            <p className="text-sm text-slate-400">
-              {inputMode === 'camera'
-                ? 'Aponte para o QR do aluno'
-                : 'Digite o nome do aluno'}
-            </p>
-            </CardContent>
-          </Card>
-        )}
         </div>
       </div>
     </ProtectedLayout>
