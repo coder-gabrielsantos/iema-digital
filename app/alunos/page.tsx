@@ -274,22 +274,26 @@ export default function AlunosPage() {
                 {visibleStudents.map((student) => (
                   <div
                     key={student._id}
-                    className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors md:grid md:grid-cols-[2fr_1fr_1fr_auto]"
+                    className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors sm:px-6 sm:py-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-center md:gap-4"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="col-span-2 flex items-center gap-3 min-w-0 md:col-span-1">
                       <StudentPhoto
                         name={student.name}
                         photoMime={student.photoMime}
                         size="md"
                       />
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900 truncate">{student.name}</p>
+                        <p className="font-medium text-slate-900 truncate text-[15px] sm:text-base">
+                          {student.name}
+                        </p>
                         <p className="text-xs text-slate-400 md:hidden">Turma {student.classCode}</p>
-                        <p className="text-xs text-slate-400 font-mono truncate">{student._id}</p>
+                        <p className="text-[11px] text-slate-400 font-mono truncate max-w-[12.5rem] sm:max-w-xs">
+                          {student._id}
+                        </p>
                       </div>
                     </div>
                     <span className="hidden md:block text-sm text-slate-600">{student.classCode}</span>
-                    <div>
+                    <div className="justify-self-start md:justify-self-auto">
                       {student.isPresent ? (
                         <Badge variant="success" className="w-fit">
                           Presente
@@ -303,7 +307,7 @@ export default function AlunosPage() {
                     <button
                       onClick={() => openQr(student)}
                       disabled={loadingQr}
-                      className="rounded-md px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                      className="justify-self-end rounded-md px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                     >
                       Ver QR
                     </button>
@@ -314,16 +318,17 @@ export default function AlunosPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-4 flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3">
+        <div className="mt-4 flex flex-col gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-600">
             Exibindo página {page} de {totalPages}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
               disabled={page <= 1 || loading}
+              className="flex-1 sm:flex-none"
             >
               Anterior
             </Button>
@@ -331,6 +336,7 @@ export default function AlunosPage() {
               size="sm"
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               disabled={page >= totalPages || loading}
+              className="flex-1 sm:flex-none"
             >
               Próxima
             </Button>
@@ -343,7 +349,7 @@ export default function AlunosPage() {
             onClick={() => setQrStudent(null)}
           >
             <div
-              className="app-panel max-w-xs w-full rounded-md p-8 text-center shadow-none"
+              className="app-panel w-full max-w-xs rounded-md p-6 text-center shadow-none sm:max-w-md sm:p-8"
               onClick={(e) => e.stopPropagation()}
             >
               <StudentPhoto
