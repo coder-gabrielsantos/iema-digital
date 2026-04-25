@@ -11,8 +11,8 @@ interface QrScannerProps {
 
 export function QrScanner({ onScan, active }: QrScannerProps) {
   const scannerRef = useRef<{
-    stop: () => Promise<void>;
-    clear: () => Promise<void>;
+    stop: () => void | Promise<void>;
+    clear: () => void | Promise<void>;
     isScanning?: boolean;
   } | null>(null);
   const [error, setError] = useState('');
@@ -26,9 +26,9 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
       const currentScanner = scannerRef.current;
       if (currentScanner) {
         if (currentScanner.isScanning) {
-          currentScanner.stop().catch(() => {});
+          void Promise.resolve(currentScanner.stop()).catch(() => {});
         }
-        currentScanner.clear().catch(() => {});
+        void Promise.resolve(currentScanner.clear()).catch(() => {});
         scannerRef.current = null;
       }
       setStarted(false);
@@ -65,8 +65,8 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
         );
 
         if (!mounted) {
-          await html5QrCode.stop().catch(() => {});
-          await html5QrCode.clear().catch(() => {});
+          await Promise.resolve(html5QrCode.stop()).catch(() => {});
+          await Promise.resolve(html5QrCode.clear()).catch(() => {});
           return;
         }
 
@@ -86,9 +86,9 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
       const currentScanner = scannerRef.current;
       if (currentScanner) {
         if (currentScanner.isScanning) {
-          currentScanner.stop().catch(() => {});
+          void Promise.resolve(currentScanner.stop()).catch(() => {});
         }
-        currentScanner.clear().catch(() => {});
+        void Promise.resolve(currentScanner.clear()).catch(() => {});
         scannerRef.current = null;
       }
       setStarted(false);
