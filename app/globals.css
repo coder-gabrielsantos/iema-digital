@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --font-sans: var(--font-inter);
+  --font-sans: "Google Sans", "Product Sans", var(--font-sans-main), "Segoe UI", Arial, sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
-  --font-display: var(--font-inter);
+  --font-display: var(--font-sans-main);
 
   --brand-indigo: #4f46e5;
   --brand-indigo-deep: #4338ca;
@@ -104,7 +104,7 @@ body {
 }
 
 .app-shell-main {
-  background: #fff;
+  background: transparent;
 }
 
 .gradient-primary {

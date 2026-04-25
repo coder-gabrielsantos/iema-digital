@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Noto_Sans, Outfit } from 'next/font/google';
+import { Outfit, Inter } from 'next/font/google';
 import './globals.css';
 
-const inter = Noto_Sans({
+const sansFont = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans-main',
   display: 'swap',
 });
 
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${logoFont.variable}`}>
-      <body className={[inter.variable, logoFont.variable, 'min-h-screen font-sans antialiased'].join(' ')}>
+    <html lang="pt-BR" className={`${sansFont.variable} ${logoFont.variable}`}>
+      <body className={[sansFont.variable, logoFont.variable, 'min-h-screen font-sans antialiased'].join(' ')}>
         {children}
       </body>
     </html>

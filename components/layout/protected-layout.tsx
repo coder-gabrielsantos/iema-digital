@@ -51,7 +51,7 @@ export function ProtectedLayout({ children, requiredRole }: ProtectedLayoutProps
   if (!role) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50/60">
+    <div className="min-h-screen bg-[radial-gradient(110%_55%_at_50%_-20%,rgba(99,102,241,0.14),transparent_56%),linear-gradient(180deg,#f8fafc_0%,#f8fafc_40%,#f3f4f6_100%)]">
       <Navbar role={role} />
       <main className="pt-16 app-shell-main">{children}</main>
     </div>

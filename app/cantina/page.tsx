@@ -131,10 +131,10 @@ export default function CantinaPage() {
 
   return (
     <ProtectedLayout requiredRole={['admin', 'cantina']}>
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <div className="mb-6">
-          <h1 className="gradient-text text-2xl font-bold">Cantina</h1>
-          <p className="mt-1 text-sm text-slate-500">
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 p-5">
+          <h1 className="gradient-text text-3xl font-semibold tracking-tight">Cantina</h1>
+          <p className="mt-1 text-sm text-slate-600">
             Valide o QR Code do aluno para registrar a refeição
           </p>
         </div>

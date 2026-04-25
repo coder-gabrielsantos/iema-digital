@@ -1,8 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Search, Users, CheckCircle2, XCircle, QrCode, RefreshCw } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  Search,
+  RefreshCw,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import Select from 'react-select';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,41 +26,100 @@ interface StudentDetail extends Student {
   photoData: string;
 }
 
+interface DashboardData {
+  totalStudents: number;
+  presentStudents: number;
+  presentPercent: number;
+}
+
 type Filter = 'all' | 'present' | 'absent';
+const PAGE_SIZE = 12;
+const FILTER_OPTIONS: Array<{ value: Filter; label: string }> = [
+  { value: 'all', label: 'Todos' },
+  { value: 'present', label: 'Presentes' },
+  { value: 'absent', label: 'Ausentes' },
+];
 
 export default function AlunosPage() {
   const [students, setStudents] = useState<Student[]>([]);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [filteredCount, setFilteredCount] = useState(0);
   const [qrStudent, setQrStudent] = useState<StudentDetail | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
 
-  const fetchStudents = useCallback(async () => {
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleStudents = useMemo(() => {
+    if (!normalizedSearch) return students;
+
+    return students.filter((student) => (
+      student.name.toLowerCase().includes(normalizedSearch) ||
+      student.classCode.toLowerCase().includes(normalizedSearch) ||
+      student._id.toLowerCase().includes(normalizedSearch)
+    ));
+  }, [students, normalizedSearch]);
+
+  const fetchStudents = useCallback(async (activePage = page) => {
     setLoading(true);
+    setError('');
+
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (filter === 'present') params.set('present', 'true');
+      params.set('status', filter);
+      params.set('page', String(activePage));
+      params.set('pageSize', String(PAGE_SIZE));
+
       const res = await fetch(`/api/students?${params}`);
       if (!res.ok) {
         throw new Error(`Falha ao carregar alunos (HTTP ${res.status})`);
       }
-      const data: Student[] = await res.json();
-      const list = filter === 'absent' ? data.filter((s) => !s.isPresent) : data;
-      setStudents(list);
+
+      const data: {
+        items: Student[];
+        pagination: { page: number; totalPages: number; total: number };
+      } = await res.json();
+
+      setStudents(data.items);
+      setTotalPages(data.pagination.totalPages || 1);
+      setPage(data.pagination.page || 1);
+      setFilteredCount(data.pagination.total || 0);
     } catch (e) {
       console.error(e);
       setStudents([]);
+      setFilteredCount(0);
+      setError('Não foi possível carregar os alunos. Tente novamente.');
     } finally {
       setLoading(false);
     }
-  }, [search, filter]);
+  }, [search, filter, page]);
+
+  const fetchDashboard = useCallback(async () => {
+    try {
+      const res = await fetch('/api/dashboard');
+      if (!res.ok) return;
+      const data: DashboardData = await res.json();
+      setDashboard(data);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchStudents(page), fetchDashboard()]);
+  }, [fetchStudents, fetchDashboard, page]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchStudents, 300);
+    const timer = setTimeout(() => {
+      void Promise.all([fetchStudents(page), fetchDashboard()]);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [fetchStudents]);
+  }, [fetchStudents, fetchDashboard, page]);
 
   async function openQr(student: Student) {
     setLoadingQr(true);
@@ -71,74 +134,118 @@ export default function AlunosPage() {
     }
   }
 
-  const presentCount = students.filter((s) => s.isPresent).length;
+  const presentCount = dashboard?.presentStudents ?? 0;
+  const totalStudents = dashboard?.totalStudents ?? 0;
+  const absentCount = totalStudents - presentCount;
+  const attendanceRate = dashboard?.presentPercent ?? 0;
 
   return (
     <ProtectedLayout requiredRole="admin">
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+      <div className="min-h-[calc(100vh-4rem)] bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="gradient-text text-2xl font-bold">Alunos</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Painel de Alunos</h1>
             <p className="mt-1 text-sm text-slate-500">
-              {students.length} alunos encontrados · {presentCount} presentes
+              Lista unificada com presença em tempo real para acompanhamento da administração
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchStudents} loading={loading}>
+          <Button variant="outline" size="sm" onClick={refreshAll} loading={loading}>
             <RefreshCw className="h-4 w-4" />
             Atualizar
           </Button>
         </div>
 
-        <div className="mb-6 grid grid-cols-3 gap-3">
-          <Card>
+        <div className="mb-6 grid gap-3 md:grid-cols-4">
+          <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900">{students.length}</p>
+              <p className="text-2xl font-bold text-slate-900">{totalStudents}</p>
               <p className="text-xs text-slate-500 mt-0.5">Total</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-emerald-600">{presentCount}</p>
               <p className="text-xs text-slate-500 mt-0.5">Presentes</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-slate-400">{students.length - presentCount}</p>
+              <p className="text-2xl font-bold text-rose-500">{Math.max(absentCount, 0)}</p>
               <p className="text-xs text-slate-500 mt-0.5">Ausentes</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-md shadow-none">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-violet-600">{attendanceRate}%</p>
+              <p className="text-xs text-slate-500 mt-0.5">Taxa de Presença</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Buscar por nome ou turma..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+        {error ? (
+          <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {error}
           </div>
-          <div className="app-panel flex gap-1 p-1">
-            {(['all', 'present', 'absent'] as Filter[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
-                  filter === f
-                    ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                {f === 'all' ? 'Todos' : f === 'present' ? 'Presentes' : 'Ausentes'}
-              </button>
-            ))}
-          </div>
-        </div>
+        ) : null}
 
-        <Card>
+        <Card className="rounded-md shadow-none">
           <CardContent className="p-0">
+            <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Tabela de Alunos
+              </p>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <div className="w-full sm:w-48">
+                  <Select
+                    inputId="students-status-filter"
+                    aria-label="Filtro de status"
+                    isSearchable={false}
+                    value={FILTER_OPTIONS.find((option) => option.value === filter)}
+                    options={FILTER_OPTIONS}
+                    onChange={(option) => {
+                      if (!option) return;
+                      setFilter(option.value);
+                      setPage(1);
+                    }}
+                    classNamePrefix="students-filter"
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        minHeight: 44,
+                        height: 44,
+                        borderRadius: 6,
+                        borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
+                        boxShadow: 'none',
+                        '&:hover': { borderColor: '#818cf8' },
+                      }),
+                      valueContainer: (base) => ({
+                        ...base,
+                        height: 44,
+                        paddingInline: 10,
+                        paddingBlock: 0,
+                      }),
+                      indicatorsContainer: (base) => ({ ...base, height: 44 }),
+                      indicatorSeparator: () => ({ display: 'none' }),
+                      dropdownIndicator: (base) => ({ ...base, color: '#64748b' }),
+                      menu: (base) => ({ ...base, zIndex: 20 }),
+                    }}
+                  />
+                </div>
+                <div className="relative w-full sm:w-72">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="Buscar por nome ou turma..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-11 w-full rounded-md pl-9"
+                  />
+                </div>
+              </div>
+            </div>
             {loading ? (
               <div>
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -151,11 +258,10 @@ export default function AlunosPage() {
                   </div>
                 ))}
               </div>
-            ) : students.length === 0 ? (
+            ) : visibleStudents.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                <Users className="h-12 w-12 mb-3 opacity-30" />
                 <p className="font-medium">Nenhum aluno encontrado</p>
-                <p className="text-sm mt-1">Verifique a conexão com o banco de dados</p>
+                <p className="text-sm mt-1">Ajuste os filtros ou tente outra busca</p>
               </div>
             ) : (
               <div>
@@ -165,7 +271,7 @@ export default function AlunosPage() {
                   <span>Status</span>
                   <span>QR Code</span>
                 </div>
-                {students.map((student) => (
+                {visibleStudents.map((student) => (
                   <div
                     key={student._id}
                     className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors md:grid md:grid-cols-[2fr_1fr_1fr_auto]"
@@ -185,13 +291,11 @@ export default function AlunosPage() {
                     <span className="hidden md:block text-sm text-slate-600">{student.classCode}</span>
                     <div>
                       {student.isPresent ? (
-                        <Badge variant="success" className="flex items-center gap-1 w-fit">
-                          <CheckCircle2 className="h-3 w-3" />
+                        <Badge variant="success" className="w-fit">
                           Presente
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
+                        <Badge variant="secondary" className="w-fit">
                           Ausente
                         </Badge>
                       )}
@@ -199,10 +303,9 @@ export default function AlunosPage() {
                     <button
                       onClick={() => openQr(student)}
                       disabled={loadingQr}
-                      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                      className="rounded-md px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                     >
-                      <QrCode className="h-4 w-4" />
-                      <span className="hidden md:inline">Ver QR</span>
+                      Ver QR
                     </button>
                   </div>
                 ))}
@@ -211,13 +314,36 @@ export default function AlunosPage() {
           </CardContent>
         </Card>
 
+        <div className="mt-4 flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3">
+          <p className="text-sm text-slate-600">
+            Exibindo página {page} de {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={page <= 1 || loading}
+            >
+              Anterior
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              disabled={page >= totalPages || loading}
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+
         {qrStudent && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             onClick={() => setQrStudent(null)}
           >
             <div
-              className="app-panel max-w-xs w-full rounded-2xl p-8 text-center shadow-premium-lg"
+              className="app-panel max-w-xs w-full rounded-md p-8 text-center shadow-none"
               onClick={(e) => e.stopPropagation()}
             >
               <StudentPhoto
@@ -225,12 +351,12 @@ export default function AlunosPage() {
                 photoData={qrStudent.photoData}
                 photoMime={qrStudent.photoMime}
                 size="xl"
-                className="mx-auto mb-4 ring-4 ring-slate-100 shadow-md"
+                className="mx-auto mb-4 ring-4 ring-slate-100"
               />
               <h3 className="font-bold text-slate-900 text-lg mb-0.5">{qrStudent.name}</h3>
               <p className="text-sm text-slate-500 mb-1">Turma {qrStudent.classCode}</p>
               <p className="text-xs text-slate-400 font-mono mb-6 break-all">{qrStudent._id}</p>
-              <div className="flex justify-center mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="mb-6 flex justify-center rounded-md border border-slate-100 bg-slate-50 p-4">
                 <QRCodeSVG value={qrStudent._id} size={180} level="H" marginSize={1} />
               </div>
               <p className="text-xs text-slate-400 mb-4">
@@ -242,6 +368,7 @@ export default function AlunosPage() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </ProtectedLayout>
   );

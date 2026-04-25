@@ -91,10 +91,10 @@ export default function PortariaPage() {
 
   return (
     <ProtectedLayout requiredRole={['admin', 'portaria']}>
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <div className="mb-6">
-          <h1 className="gradient-text text-2xl font-bold">Portaria</h1>
-          <p className="mt-1 text-sm text-slate-500">
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 p-5">
+          <h1 className="gradient-text text-3xl font-semibold tracking-tight">Portaria</h1>
+          <p className="mt-1 text-sm text-slate-600">
             Escaneie o QR Code do aluno para registrar entrada ou saída
           </p>
         </div>

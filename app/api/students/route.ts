@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
     const Presence = getPresenceModel(platformConn);
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
-    const presentOnly = searchParams.get('present') === 'true';
+    const status = searchParams.get('status') || 'all';
+    const page = Math.max(1, Number(searchParams.get('page') || '1'));
+    const pageSize = Math.min(50, Math.max(5, Number(searchParams.get('pageSize') || '12')));
 
     const query: Record<string, unknown> = {};
     if (search) {
@@ -33,15 +35,38 @@ export async function GET(req: NextRequest) {
       .lean();
     const presentSet = new Set(presenceRecords.map((p) => p.studentId));
 
-    const withPresence = students
-      .map((s) => ({ ...s, isPresent: presentSet.has(s._id.toString()) }))
-      .filter((s) => (presentOnly ? s.isPresent : true));
+    const withPresence = students.map((s) => ({ ...s, isPresent: presentSet.has(s._id.toString()) }));
 
-    return NextResponse.json(withPresence);
+    const filtered = withPresence.filter((student) => {
+      if (status === 'present') return student.isPresent;
+      if (status === 'absent') return !student.isPresent;
+      return true;
+    });
+
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * pageSize;
+    const items = filtered.slice(start, start + pageSize);
+
+    return NextResponse.json({
+      items,
+      summary: {
+        total: withPresence.length,
+        present: withPresence.filter((student) => student.isPresent).length,
+        absent: withPresence.filter((student) => !student.isPresent).length,
+      },
+      pagination: {
+        page: safePage,
+        pageSize,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error('GET /api/students failed:', error);
     return NextResponse.json(
-      { error: 'Falha ao consultar alunos. Verifique a conexao com o banco de dados.' },
+      { error: 'Falha ao consultar alunos. Verifique a conexão com o banco de dados.' },
       { status: 500 }
     );
   }

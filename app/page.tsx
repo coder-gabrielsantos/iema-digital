@@ -12,7 +12,7 @@ export default function HomePage() {
       router.replace('/login');
       return;
     }
-    if (role === 'admin') router.replace('/dashboard');
+    if (role === 'admin') router.replace('/alunos');
     else if (role === 'portaria') router.replace('/portaria');
     else if (role === 'cantina') router.replace('/cantina');
     else router.replace('/login');

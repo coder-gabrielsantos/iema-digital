@@ -39,12 +39,15 @@ function LoginForm({
   return (
     <>
       <div className="space-y-1.5 text-center">
+        <h1 className={cn('text-xl font-semibold tracking-tight', dark ? 'text-white' : 'text-slate-900')}>
+          Acesso a Plataforma
+        </h1>
         <p className={cn('text-sm leading-relaxed', dark ? 'text-slate-400' : 'text-slate-500')}>
           Entre com sua chave de acesso para continuar
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-3.5">
+      <form onSubmit={onSubmit} className="mt-5 space-y-3">
         <div>
           <div className="relative">
             <Lock
@@ -119,7 +122,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const role = localStorage.getItem('iema_role');
-    if (role === 'admin') router.replace('/dashboard');
+    if (role === 'admin') router.replace('/alunos');
     else if (role === 'portaria') router.replace('/portaria');
     else if (role === 'cantina') router.replace('/cantina');
   }, [router]);
@@ -139,18 +142,18 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Chave invalida');
+        setError(data.error || 'Chave inválida');
         return;
       }
 
       localStorage.setItem('iema_role', data.role);
       localStorage.setItem('iema_key', data.key);
 
-      if (data.role === 'admin') router.push('/dashboard');
+      if (data.role === 'admin') router.push('/alunos');
       else if (data.role === 'portaria') router.push('/portaria');
       else if (data.role === 'cantina') router.push('/cantina');
     } catch {
-      setError('Erro de conexao. Tente novamente.');
+      setError('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -181,8 +184,8 @@ export default function LoginPage() {
             error={error}
             onSubmit={handleSubmit}
           />
-          <p className="mt-8 text-center text-xs text-slate-400">
-            © {new Date().getFullYear()} IEMA - Instituto de Ensino Medio e Profissional
+          <p className="mt-5 text-center text-xs text-slate-400">
+            © {new Date().getFullYear()} IEMA - Instituto de Ensino Médio e Profissional
           </p>
         </>
       }
