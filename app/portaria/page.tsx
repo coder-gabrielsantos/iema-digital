@@ -33,6 +33,7 @@ export default function PortariaPage() {
   const [manualName, setManualName] = useState('');
   const [inputMode, setInputMode] = useState<'camera' | 'manual'>('camera');
   const [toasts, setToasts] = useState<ScanToast[]>([]);
+  const [scanFeedbackToken, setScanFeedbackToken] = useState(0);
 
   // per-QR debounce: studentId → timestamp of last scan
   const lastScanTimes = useRef<Map<string, number>>(new Map());
@@ -54,6 +55,7 @@ export default function PortariaPage() {
     async (value: string, mode: 'id' | 'name') => {
       const key = value.trim();
       if (!key) return;
+      const showToast = mode === 'name';
 
       // Per-QR debounce
       const now = Date.now();
@@ -62,17 +64,19 @@ export default function PortariaPage() {
       lastScanTimes.current.set(key, now);
 
       const toastId = `${key}-${now}`;
-      const pending: ScanToast = {
-        id: toastId,
-        studentId: key,
-        name: '...',
-        classCode: '',
-        type: 'entry',
-        timestamp: new Date(),
-        status: 'pending',
-      };
-      setToasts((prev) => [pending, ...prev].slice(0, 8));
-      scheduleRemoval(toastId);
+      if (showToast) {
+        const pending: ScanToast = {
+          id: toastId,
+          studentId: key,
+          name: '...',
+          classCode: '',
+          type: 'entry',
+          timestamp: new Date(),
+          status: 'pending',
+        };
+        setToasts((prev) => [pending, ...prev].slice(0, 8));
+        scheduleRemoval(toastId);
+      }
 
       try {
         const res = await fetch('/api/attendance', {
@@ -84,36 +88,43 @@ export default function PortariaPage() {
         });
         const data = await res.json();
 
-        setToasts((prev) =>
-          prev.map((t) =>
-            t.id !== toastId
-              ? t
-              : res.ok
-              ? {
-                  ...t,
-                  status: 'success',
-                  name: data.student.name,
-                  classCode: data.student.classCode,
-                  type: data.type,
-                }
-              : { ...t, status: 'error', name: '—', error: data.error || 'Erro' }
-          )
-        );
+        if (showToast) {
+          setToasts((prev) =>
+            prev.map((t) =>
+              t.id !== toastId
+                ? t
+                : res.ok
+                ? {
+                    ...t,
+                    status: 'success',
+                    name: data.student.name,
+                    classCode: data.student.classCode,
+                    type: data.type,
+                  }
+                : { ...t, status: 'error', name: '—', error: data.error || 'Erro' }
+            )
+          );
+        }
       } catch {
-        setToasts((prev) =>
-          prev.map((t) =>
-            t.id === toastId
-              ? { ...t, status: 'error', name: '—', error: 'Erro de conexão' }
-              : t
-          )
-        );
+        if (showToast) {
+          setToasts((prev) =>
+            prev.map((t) =>
+              t.id === toastId
+                ? { ...t, status: 'error', name: '—', error: 'Erro de conexão' }
+                : t
+            )
+          );
+        }
       }
     },
     [scheduleRemoval]
   );
 
   const handleScan = useCallback(
-    (data: string) => processStudentInput(data, 'id'),
+    (data: string) => {
+      setScanFeedbackToken((prev) => prev + 1);
+      void processStudentInput(data, 'id');
+    },
     [processStudentInput]
   );
 
@@ -202,7 +213,11 @@ export default function PortariaPage() {
                 </button>
               </div>
               <div className="bg-white px-4 pb-4 pt-3">
-                <QrScanner onScan={handleScan} active={scannerActive} />
+                <QrScanner
+                  onScan={handleScan}
+                  active={scannerActive}
+                  feedbackToken={scanFeedbackToken}
+                />
               </div>
             </div>
           )}
