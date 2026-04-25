@@ -150,26 +150,129 @@ body {
 
 #qr-reader {
   border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+#qr-reader * {
+  font-family: var(--font-sans) !important;
 }
 
 #qr-reader__scan_region {
-  border-radius: 12px;
+  border-radius: 18px;
   overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  min-height: 0 !important;
+}
+
+#qr-reader__scan_region > img {
+  display: none !important;
+}
+
+/* Hide html5-qrcode placeholder panel before camera starts */
+#qr-reader__scan_region:not(:has(video)) {
+  display: none !important;
+}
+
+#qr-reader video,
+#qr-reader__scan_region img {
+  border-radius: 16px !important;
+}
+
+#qr-reader__dashboard {
+  margin-top: 10px;
+  border-radius: 14px;
+  border: none;
+  background: #ffffff;
+  padding: 14px 12px 12px;
+}
+
+#qr-reader__dashboard_section {
+  padding-top: 0 !important;
+}
+
+#qr-reader__dashboard_section_csr {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+#qr-reader__dashboard_section_csr > span {
+  display: none !important;
 }
 
 #qr-reader__dashboard_section_csr button {
-  background: #4338ca !important;
-  border-color: #4338ca !important;
-  color: white !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-  font-weight: 500 !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  border-radius: 9999px !important;
+  padding: 9px 16px !important;
+  font-weight: 600 !important;
+  transition: all 120ms ease !important;
 }
 
-#qr-reader__camera_permission_button {
+#qr-reader__dashboard_section_csr button:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+#qr-reader__dashboard_section_csr button:active {
+  background: #f1f5f9 !important;
+}
+
+#qr-reader #qr-reader__camera_permission_button {
+  background: #4f46e5 !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  padding: 10px 18px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 150ms ease !important;
+}
+
+#qr-reader #qr-reader__camera_permission_button:hover {
   background: #4338ca !important;
   border-color: #4338ca !important;
-  color: white !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
+  transform: translateY(-1px);
+}
+
+#qr-reader__dashboard_section_swaplink {
+  display: none !important;
+}
+
+#qr-reader__dashboard_section_swaplink:hover {
+  background: transparent;
+  color: #64748b !important;
+}
+
+/* Fallback selectors for html5-qrcode UI variations */
+#qr-reader button {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  border-radius: 9999px !important;
+  padding: 9px 16px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+#qr-reader a {
+  color: #64748b !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  border-radius: 0;
+  padding: 2px 0;
+  transition: color 120ms ease;
+}
+
+#qr-reader a:hover {
+  background: transparent;
+  color: #334155 !important;
 }

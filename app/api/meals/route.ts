@@ -12,13 +12,48 @@ export async function POST(req: NextRequest) {
   ]);
   const Student = getStudentModel(studentsConn);
   const Meal = getMealModel(platformConn);
-  const { studentId } = await req.json();
+  const { studentId, studentName } = await req.json();
+  const hasStudentId = typeof studentId === 'string' && studentId.trim().length > 0;
+  const hasStudentName = typeof studentName === 'string' && studentName.trim().length > 0;
 
-  if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
-    return NextResponse.json({ error: 'ID do aluno inválido' }, { status: 400 });
+  if (!hasStudentId && !hasStudentName) {
+    return NextResponse.json(
+      { error: 'Informe um identificador válido do aluno' },
+      { status: 400 }
+    );
   }
 
-  const student = await Student.findById(studentId);
+  let student = null;
+
+  if (hasStudentId) {
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return NextResponse.json({ error: 'ID do aluno inválido' }, { status: 400 });
+    }
+    student = await Student.findById(studentId);
+  } else {
+    const normalizedName = studentName.trim();
+    const escapedName = normalizedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const exactMatches = await Student.find({
+      name: { $regex: `^${escapedName}$`, $options: 'i' },
+    })
+      .sort({ createdAt: -1 })
+      .limit(2);
+
+    if (exactMatches.length > 1) {
+      return NextResponse.json(
+        { error: 'Mais de um aluno encontrado com esse nome. Seja mais específico.' },
+        { status: 409 }
+      );
+    }
+
+    if (exactMatches.length === 1) {
+      student = exactMatches[0];
+    } else {
+      student = await Student.findOne({
+        name: { $regex: escapedName, $options: 'i' },
+      }).sort({ createdAt: -1 });
+    }
+  }
 
   if (!student) {
     return NextResponse.json({ error: 'Aluno não encontrado' }, { status: 404 });

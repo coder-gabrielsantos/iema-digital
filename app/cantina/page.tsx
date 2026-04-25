@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { CheckCircle2, XCircle, UtensilsCrossed, Keyboard, QrCode, Users, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, UtensilsCrossed, Keyboard, QrCode, RefreshCw, Pause, Play } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +39,7 @@ export default function CantinaPage() {
   const [loadingStats, setLoadingStats] = useState(true);
 
   const [scannerActive, setScannerActive] = useState(false);
-  const [manualId, setManualId] = useState('');
+  const [manualName, setManualName] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<MealResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -75,9 +75,9 @@ export default function CantinaPage() {
     };
   }, [fetchStats]);
 
-  const processId = useCallback(
-    async (id: string) => {
-      if (processingRef.current || !id.trim()) return;
+  const processStudentInput = useCallback(
+    async (value: string, mode: 'id' | 'name') => {
+      if (processingRef.current || !value.trim()) return;
       processingRef.current = true;
 
       setStatus('scanning');
@@ -88,7 +88,11 @@ export default function CantinaPage() {
         const res = await fetch('/api/meals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: id.trim() }),
+          body: JSON.stringify(
+            mode === 'name'
+              ? { studentName: value.trim() }
+              : { studentId: value.trim() }
+          ),
         });
 
         const data = await res.json();
@@ -121,69 +125,67 @@ export default function CantinaPage() {
     [fetchStats]
   );
 
-  const handleScan = useCallback((data: string) => processId(data), [processId]);
+  const handleScan = useCallback((data: string) => processStudentInput(data, 'id'), [processStudentInput]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    processId(manualId);
-    setManualId('');
+    processStudentInput(manualName, 'name');
+    setManualName('');
   };
 
   return (
     <ProtectedLayout requiredRole={['admin', 'cantina']}>
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 p-5">
-          <h1 className="gradient-text text-3xl font-semibold tracking-tight">Cantina</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Valide o QR Code do aluno para registrar a refeição
-          </p>
+      <div className="min-h-[calc(100vh-4rem)] bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Cantina</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Valide o QR para registrar refeição
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchStats} loading={loadingStats}>
+            <RefreshCw className="h-4 w-4" />
+            Atualizar Contagem
+          </Button>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="rounded-xl bg-indigo-50 p-2.5 flex-shrink-0">
-                <Users className="h-5 w-5 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Alunos no Prédio</p>
-                {loadingStats ? (
-                  <div className="h-7 w-12 animate-pulse rounded bg-slate-200 mt-0.5" />
-                ) : (
-                  <p className="text-2xl font-bold text-slate-900">{presentCount}</p>
-                )}
-              </div>
+        <div className="mb-6 grid gap-3 md:grid-cols-2">
+          <Card className="rounded-md shadow-none">
+            <CardContent className="p-4 text-center">
+              {loadingStats ? (
+                <div className="mx-auto h-7 w-12 animate-pulse rounded bg-slate-200" />
+              ) : (
+                <p className="text-2xl font-bold text-slate-900">{presentCount}</p>
+              )}
+              <p className="mt-0.5 text-xs text-slate-500">Alunos no instituto</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="rounded-xl bg-emerald-50 p-2.5 flex-shrink-0">
-                <UtensilsCrossed className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Refeições Hoje</p>
-                {loadingStats ? (
-                  <div className="h-7 w-12 animate-pulse rounded bg-slate-200 mt-0.5" />
-                ) : (
-                  <p className="text-2xl font-bold text-slate-900">{todayMeals}</p>
-                )}
-              </div>
+          <Card className="rounded-md shadow-none">
+            <CardContent className="p-4 text-center">
+              {loadingStats ? (
+                <div className="mx-auto h-7 w-12 animate-pulse rounded bg-slate-200" />
+              ) : (
+                <p className="text-2xl font-bold text-slate-900">{todayMeals}</p>
+              )}
+              <p className="mt-0.5 text-xs text-slate-500">Refeições Hoje</p>
             </CardContent>
           </Card>
         </div>
 
-        <Button variant="outline" size="sm" onClick={fetchStats} loading={loadingStats} className="mb-4">
-          <RefreshCw className="h-4 w-4" />
-          Atualizar Contagem
-        </Button>
-
-        <div className="app-panel mb-4 flex p-1">
+        <div className="relative mb-4 rounded-full border border-slate-200 bg-slate-100 p-1">
+          <div
+            className={`pointer-events-none absolute bottom-1 top-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-out ${
+              inputMode === 'manual' ? 'translate-x-full' : 'translate-x-0'
+            }`}
+          />
+          <div className="relative z-10 flex">
           <button
             onClick={() => { setInputMode('camera'); setScannerActive(true); }}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${
               inputMode === 'camera'
-                ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'text-indigo-600'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <QrCode className="h-4 w-4" />
@@ -191,52 +193,67 @@ export default function CantinaPage() {
           </button>
           <button
             onClick={() => { setInputMode('manual'); setScannerActive(false); }}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-medium transition-colors ${
               inputMode === 'manual'
-                ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'text-indigo-600'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <Keyboard className="h-4 w-4" />
             Manual
           </button>
+          </div>
         </div>
 
         {inputMode === 'camera' && (
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Validador de QR Code</CardTitle>
-                <Button
-                  variant={scannerActive ? 'destructive' : 'default'}
-                  size="sm"
-                  onClick={() => setScannerActive(!scannerActive)}
-                >
-                  {scannerActive ? 'Pausar' : 'Iniciar Câmera'}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
+          <div className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+              <p className="text-xs font-medium tracking-wide text-slate-400">
+                Posicione o QR Code no centro da câmera
+              </p>
+              <button
+                onClick={() => setScannerActive(!scannerActive)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                  scannerActive
+                    ? 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                    : 'border-indigo-500 bg-indigo-500 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600'
+                }`}
+              >
+                {scannerActive ? (
+                  <><Pause className="h-3 w-3" /> Pausar</>
+                ) : (
+                  <><Play className="h-3 w-3" /> Iniciar</>
+                )}
+              </button>
+            </div>
+            <div className="bg-white px-4 pb-4 pt-3">
               <QrScanner onScan={handleScan} active={scannerActive} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {inputMode === 'manual' && (
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Entrada Manual de ID</CardTitle>
+          <Card className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
+            <CardHeader className="border-b border-slate-100 px-5 py-3.5">
+              <CardTitle className="text-xs font-medium tracking-wide text-slate-400">
+                Registro manual
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="bg-white px-4 pb-4 pt-3">
               <form onSubmit={handleManualSubmit} className="flex gap-2">
                 <Input
-                  placeholder="Cole o ObjectId do aluno..."
-                  value={manualId}
-                  onChange={(e) => setManualId(e.target.value)}
-                  className="font-mono text-xs"
+                  placeholder="Nome do aluno"
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  className="h-10 rounded-full border-slate-200 text-sm"
                   autoFocus
                 />
-                <Button type="submit" loading={status === 'scanning'} disabled={!manualId.trim()}>
+                <Button
+                  type="submit"
+                  loading={status === 'scanning'}
+                  disabled={!manualName.trim()}
+                  className="h-10 rounded-full border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
+                >
                   Verificar
                 </Button>
               </form>
@@ -245,7 +262,7 @@ export default function CantinaPage() {
         )}
 
         {status === 'scanning' && (
-          <Card className="border-indigo-200 bg-indigo-50">
+          <Card className="rounded-md border-indigo-200 bg-indigo-50 shadow-none">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent flex-shrink-0" />
               <p className="font-medium text-indigo-900">Validando...</p>
@@ -254,7 +271,7 @@ export default function CantinaPage() {
         )}
 
         {status === 'success' && result && (
-          <Card className="border-2 border-emerald-300 bg-emerald-50">
+          <Card className="rounded-md border-2 border-emerald-300 bg-emerald-50 shadow-none">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <StudentPhoto
@@ -279,7 +296,7 @@ export default function CantinaPage() {
         )}
 
         {status === 'duplicate' && result && (
-          <Card className="border-2 border-red-300 bg-red-50">
+          <Card className="rounded-md border-2 border-red-300 bg-red-50 shadow-none">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <StudentPhoto
@@ -304,7 +321,7 @@ export default function CantinaPage() {
         )}
 
         {status === 'error' && (
-          <Card className="border-2 border-red-200 bg-red-50">
+          <Card className="rounded-md border-2 border-red-200 bg-red-50 shadow-none">
             <CardContent className="p-6 flex items-center gap-4">
               <XCircle className="h-10 w-10 text-red-500 flex-shrink-0" />
               <div>
@@ -316,15 +333,18 @@ export default function CantinaPage() {
         )}
 
         {status === 'idle' && (
-          <div className="app-panel mt-2 p-6 text-center">
+          <Card className="mt-2 rounded-md shadow-none">
+            <CardContent className="p-6 text-center">
             <UtensilsCrossed className="mx-auto h-8 w-8 text-slate-300 mb-2" />
             <p className="text-sm text-slate-400">
               {inputMode === 'camera'
-                ? 'Aponte a câmera para o QR Code do cartão do aluno'
-                : 'Cole o ID do aluno para validar a refeição'}
+                ? 'Aponte para o QR do aluno'
+                : 'Digite o nome do aluno'}
             </p>
-          </div>
+            </CardContent>
+          </Card>
         )}
+        </div>
       </div>
     </ProtectedLayout>
   );
