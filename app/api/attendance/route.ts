@@ -65,20 +65,21 @@ export async function POST(req: NextRequest) {
   const currentlyPresent = Boolean(currentPresence?.isPresent);
   const type = currentlyPresent ? 'exit' : 'entry';
 
-  await Attendance.create({
-    studentId: student._id.toString(),
-    studentName: student.name,
-    classCode: student.classCode,
-    type,
-    timestamp: new Date(),
-    date: getTodayString(),
-  });
-
-  await Presence.findOneAndUpdate(
-    { studentId: student._id.toString() },
-    { $set: { isPresent: !currentlyPresent } },
-    { upsert: true, new: true }
-  );
+  await Promise.all([
+    Attendance.create({
+      studentId: student._id.toString(),
+      studentName: student.name,
+      classCode: student.classCode,
+      type,
+      timestamp: new Date(),
+      date: getTodayString(),
+    }),
+    Presence.findOneAndUpdate(
+      { studentId: student._id.toString() },
+      { $set: { isPresent: !currentlyPresent } },
+      { upsert: true, new: true }
+    ),
+  ]);
 
   return NextResponse.json({
     success: true,
@@ -87,8 +88,6 @@ export async function POST(req: NextRequest) {
       studentId: student._id.toString(),
       name: student.name,
       classCode: student.classCode,
-      photoMime: student.photoMime,
-      photoData: student.photoData,
       isPresent: !currentlyPresent,
     },
   });
