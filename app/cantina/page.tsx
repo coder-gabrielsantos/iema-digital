@@ -38,7 +38,7 @@ export default function CantinaPage() {
   const [todayMeals, setTodayMeals] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  const [scannerActive, setScannerActive] = useState(false);
+  const [scannerActive, setScannerActive] = useState(true);
   const [manualName, setManualName] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<MealResult | null>(null);

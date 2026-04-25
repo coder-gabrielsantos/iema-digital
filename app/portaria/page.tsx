@@ -33,7 +33,7 @@ interface ScanResult {
 type ScanStatus = 'idle' | 'scanning' | 'success' | 'error';
 
 export default function PortariaPage() {
-  const [scannerActive, setScannerActive] = useState(false);
+  const [scannerActive, setScannerActive] = useState(true);
   const [manualName, setManualName] = useState('');
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<ScanResult | null>(null);

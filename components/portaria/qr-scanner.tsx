@@ -16,6 +16,7 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [error, setError] = useState('');
   const [started, setStarted] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   const localizeScannerUi = () => {
     const root = document.getElementById('qr-reader');
@@ -131,14 +132,21 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
     return () => {
       stopScanner();
     };
-  }, [active, onScan]);
+  }, [active, onScan, retryKey]);
 
   if (error) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl bg-red-50 px-6 py-8 text-center">
         <CameraOff className="h-9 w-9 text-red-400" />
         <p className="text-sm text-red-600">{error}</p>
-        <Button variant="outline" size="sm" onClick={() => setError('')}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError('');
+            setRetryKey((value) => value + 1);
+          }}
+        >
           Tentar novamente
         </Button>
       </div>
