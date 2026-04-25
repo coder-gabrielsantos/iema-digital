@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { User } from 'lucide-react';
 
 interface StudentPhotoProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
@@ -16,13 +15,6 @@ const sizeClasses = {
   xl: 'h-20 w-20 text-2xl',
 };
 
-const iconSizes = {
-  sm: 'h-4 w-4',
-  md: 'h-5 w-5',
-  lg: 'h-7 w-7',
-  xl: 'h-10 w-10',
-};
-
 function getInitials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -31,9 +23,9 @@ function getInitials(name: string): string {
 
 function stringToColor(str: string): string {
   const colors = [
-    '#1d4ed8', '#0891b2', '#059669', '#7c3aed',
-    '#db2777', '#ea580c', '#16a34a', '#9333ea',
-    '#0284c7', '#dc2626',
+    '#4338ca', '#0284c7', '#4f46e5', '#7c3aed',
+    '#db2777', '#ea580c', '#16a34a', '#0f766e',
+    '#0369a1', '#dc2626',
   ];
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -59,7 +51,7 @@ export function StudentPhoto({
       className={cn(
         'relative flex flex-shrink-0 items-center justify-center rounded-full overflow-hidden',
         sizeClasses[size],
-        !hasPhoto && 'font-bold text-white',
+        !hasPhoto && 'font-bold text-white shadow-sm shadow-indigo-950/20',
         className
       )}
       style={!hasPhoto ? { backgroundColor: color } : undefined}

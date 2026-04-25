@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_KEYS } from '@/lib/utils';
+import { ACCESS_KEYS } from '@/lib/auth-keys';
 
 export async function POST(req: NextRequest) {
   const { key } = await req.json();

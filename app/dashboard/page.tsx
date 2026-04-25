@@ -78,18 +78,22 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    const initialFetch = window.setTimeout(() => {
+      void fetchData();
+    }, 0);
     const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialFetch);
+      clearInterval(interval);
+    };
   }, [fetchData]);
 
   return (
     <ProtectedLayout requiredRole="admin">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+            <h1 className="gradient-text text-2xl font-bold">Dashboard</h1>
             <p className="mt-1 text-sm text-slate-500 flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
               Atualizado às {formatTime(lastUpdated)}
@@ -122,15 +126,14 @@ export default function DashboardPage() {
           </div>
         ) : data ? (
           <>
-            {/* Metric cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
               <MetricCard
                 icon={Users}
                 label="Alunos no Prédio Agora"
                 value={data.presentStudents}
                 sub={`de ${data.totalStudents} matriculados (${data.presentPercent}%)`}
-                iconClass="text-blue-600"
-                bgClass="bg-blue-50"
+                iconClass="text-indigo-600"
+                bgClass="bg-indigo-50"
               />
               <MetricCard
                 icon={UtensilsCrossed}
@@ -150,7 +153,6 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Presence bar */}
             <Card className="mb-6">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-3">
@@ -159,7 +161,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-700"
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-700"
                     style={{ width: `${data.presentPercent}%` }}
                   />
                 </div>
@@ -170,11 +172,10 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Chart */}
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  <BarChart3 className="h-5 w-5 text-indigo-600" />
                   <CardTitle>Fluxo de Entradas por Horário</CardTitle>
                 </div>
                 <CardDescription>Número de entradas registradas por hora hoje</CardDescription>
@@ -205,15 +206,15 @@ export default function DashboardPage() {
                         contentStyle={{
                           background: '#fff',
                           border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                          borderRadius: '10px',
+                          boxShadow: '0 0 0 1px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.07)',
                         }}
                         cursor={{ fill: '#f8fafc' }}
                         formatter={(v) => [v, 'Entradas']}
                       />
                       <Bar
                         dataKey="entradas"
-                        fill="#2563eb"
+                        fill="#4f46e5"
                         radius={[4, 4, 0, 0]}
                         maxBarSize={40}
                       />

@@ -18,11 +18,3 @@ export function formatDate(date: Date | string): string {
 export function getTodayString(): string {
   return new Date().toISOString().split('T')[0];
 }
-
-export const ACCESS_KEYS: Record<string, 'admin' | 'portaria' | 'cantina'> = {
-  'ADMIN-IEMA': 'admin',
-  'PORTARIA-IEMA': 'portaria',
-  'CANTINA-IEMA': 'cantina',
-};
-
-export type UserRole = 'admin' | 'portaria' | 'cantina';

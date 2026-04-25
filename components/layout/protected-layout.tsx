@@ -30,14 +30,20 @@ export function ProtectedLayout({ children, requiredRole }: ProtectedLayoutProps
       }
     }
 
-    setRole(storedRole);
-    setLoading(false);
+    const syncState = window.setTimeout(() => {
+      setRole(storedRole);
+      setLoading(false);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(syncState);
+    };
   }, [router, requiredRole]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-slate-50/60">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
       </div>
     );
   }
@@ -45,9 +51,9 @@ export function ProtectedLayout({ children, requiredRole }: ProtectedLayoutProps
   if (!role) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50/60">
       <Navbar role={role} />
-      <main className="pt-16">{children}</main>
+      <main className="pt-16 app-shell-main">{children}</main>
     </div>
   );
 }

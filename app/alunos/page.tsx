@@ -76,10 +76,9 @@ export default function AlunosPage() {
   return (
     <ProtectedLayout requiredRole="admin">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Alunos</h1>
+            <h1 className="gradient-text text-2xl font-bold">Alunos</h1>
             <p className="mt-1 text-sm text-slate-500">
               {students.length} alunos encontrados · {presentCount} presentes
             </p>
@@ -90,7 +89,6 @@ export default function AlunosPage() {
           </Button>
         </div>
 
-        {/* Stats */}
         <div className="mb-6 grid grid-cols-3 gap-3">
           <Card>
             <CardContent className="p-4 text-center">
@@ -112,7 +110,6 @@ export default function AlunosPage() {
           </Card>
         </div>
 
-        {/* Filters */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -123,15 +120,15 @@ export default function AlunosPage() {
               className="pl-9"
             />
           </div>
-          <div className="flex rounded-xl border border-slate-200 bg-white p-1 gap-1">
+          <div className="app-panel flex gap-1 p-1">
             {(['all', 'present', 'absent'] as Filter[]).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
                   filter === f
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 {f === 'all' ? 'Todos' : f === 'present' ? 'Presentes' : 'Ausentes'}
@@ -140,7 +137,6 @@ export default function AlunosPage() {
           </div>
         </div>
 
-        {/* Table */}
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -163,7 +159,6 @@ export default function AlunosPage() {
               </div>
             ) : (
               <div>
-                {/* Desktop header */}
                 <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_auto] gap-4 px-6 py-3 border-b border-slate-100 text-xs font-medium text-slate-400 uppercase tracking-wide">
                   <span>Aluno</span>
                   <span>Turma</span>
@@ -204,7 +199,7 @@ export default function AlunosPage() {
                     <button
                       onClick={() => openQr(student)}
                       disabled={loadingQr}
-                      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                     >
                       <QrCode className="h-4 w-4" />
                       <span className="hidden md:inline">Ver QR</span>
@@ -216,14 +211,13 @@ export default function AlunosPage() {
           </CardContent>
         </Card>
 
-        {/* QR Code modal */}
         {qrStudent && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             onClick={() => setQrStudent(null)}
           >
             <div
-              className="bg-white rounded-2xl p-8 shadow-2xl max-w-xs w-full text-center"
+              className="app-panel max-w-xs w-full rounded-2xl p-8 text-center shadow-premium-lg"
               onClick={(e) => e.stopPropagation()}
             >
               <StudentPhoto

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff } from 'lucide-react';
+import { CameraOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QrScannerProps {
@@ -14,6 +14,15 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
   const scannerRef = useRef<unknown>(null);
   const [error, setError] = useState('');
   const [started, setStarted] = useState(false);
+
+  const stopScanner = () => {
+    if (scannerRef.current) {
+      const s = scannerRef.current as { clear: () => Promise<void> };
+      s.clear().catch(() => {});
+      scannerRef.current = null;
+      setStarted(false);
+    }
+  };
 
   useEffect(() => {
     if (!active) {
@@ -61,18 +70,9 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
     };
   }, [active, onScan]);
 
-  function stopScanner() {
-    if (scannerRef.current) {
-      const s = scannerRef.current as { clear: () => Promise<void> };
-      s.clear().catch(() => {});
-      scannerRef.current = null;
-      setStarted(false);
-    }
-  }
-
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-red-200 bg-red-50 p-8 text-center">
+      <div className="flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-red-200 bg-red-50 p-8 text-center shadow-premium">
         <CameraOff className="h-12 w-12 text-red-400" />
         <p className="text-sm text-red-600">{error}</p>
         <Button variant="outline" size="sm" onClick={() => setError('')}>
@@ -83,11 +83,11 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
   }
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white">
+    <div className="app-panel overflow-hidden rounded-2xl">
       <div id="qr-reader" ref={containerRef} className="w-full" />
       {!started && active && (
-        <div className="flex items-center justify-center h-48">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="flex h-48 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
         </div>
       )}
     </div>

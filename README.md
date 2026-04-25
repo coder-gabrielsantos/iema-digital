@@ -18,9 +18,9 @@ MVP da plataforma de gestão escolar do IEMA, com controle de presença via QR C
 
 | Módulo | Chave de Acesso | Descrição |
 |--------|----------------|-----------|
-| **Admin** | `ADMIN-IEMA` | Dashboard com métricas, gráfico de fluxo, lista de alunos |
-| **Portaria** | `PORTARIA-IEMA` | Leitura de QR Code para registro de entrada/saída |
-| **Cantina** | `CANTINA-IEMA` | Validação de refeição e contador de alunos presentes |
+| **Admin** | `LOGIN_KEY_ADMIN` | Dashboard com métricas, gráfico de fluxo, lista de alunos |
+| **Portaria** | `LOGIN_KEY_PORTARIA` | Leitura de QR Code para registro de entrada/saída |
+| **Cantina** | `LOGIN_KEY_CANTINA` | Validação de refeição e contador de alunos presentes |
 
 ## Configuração
 
@@ -36,6 +36,9 @@ Crie um arquivo `.env.local` na raiz do projeto:
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/iema-digital
+LOGIN_KEY_ADMIN=ADMIN-IEMA
+LOGIN_KEY_PORTARIA=PORTARIA-IEMA
+LOGIN_KEY_CANTINA=CANTINA-IEMA
 ```
 
 Para produção, use uma URI do MongoDB Atlas:
@@ -54,7 +57,7 @@ Acesse [http://localhost:3000](http://localhost:3000)
 
 ### 4. Popular dados de exemplo
 
-Após iniciar o servidor, acesse a página **Alunos** (com chave `ADMIN-IEMA`) e clique em **"Popular Mock"** para criar 50 alunos de exemplo.
+Após iniciar o servidor, acesse a página **Alunos** (com o valor definido em `LOGIN_KEY_ADMIN`) e clique em **"Popular Mock"** para criar 50 alunos de exemplo.
 
 Ou via API:
 

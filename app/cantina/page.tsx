@@ -65,9 +65,14 @@ export default function CantinaPage() {
   }, []);
 
   useEffect(() => {
-    fetchStats();
+    const initialFetch = window.setTimeout(() => {
+      void fetchStats();
+    }, 0);
     const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialFetch);
+      clearInterval(interval);
+    };
   }, [fetchStats]);
 
   const processId = useCallback(
@@ -128,18 +133,17 @@ export default function CantinaPage() {
     <ProtectedLayout requiredRole={['admin', 'cantina']}>
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Cantina</h1>
+          <h1 className="gradient-text text-2xl font-bold">Cantina</h1>
           <p className="mt-1 text-sm text-slate-500">
             Valide o QR Code do aluno para registrar a refeição
           </p>
         </div>
 
-        {/* Stats */}
         <div className="mb-4 grid grid-cols-2 gap-3">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="rounded-xl bg-blue-50 p-2.5 flex-shrink-0">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="rounded-xl bg-indigo-50 p-2.5 flex-shrink-0">
+                <Users className="h-5 w-5 text-indigo-600" />
               </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Alunos no Prédio</p>
@@ -173,14 +177,13 @@ export default function CantinaPage() {
           Atualizar Contagem
         </Button>
 
-        {/* Mode switcher */}
-        <div className="mb-4 flex rounded-xl border border-slate-200 bg-white p-1">
+        <div className="app-panel mb-4 flex p-1">
           <button
             onClick={() => { setInputMode('camera'); setScannerActive(true); }}
             className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
               inputMode === 'camera'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
             <QrCode className="h-4 w-4" />
@@ -190,8 +193,8 @@ export default function CantinaPage() {
             onClick={() => { setInputMode('manual'); setScannerActive(false); }}
             className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
               inputMode === 'manual'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
             <Keyboard className="h-4 w-4" />
@@ -199,7 +202,6 @@ export default function CantinaPage() {
           </button>
         </div>
 
-        {/* Camera */}
         {inputMode === 'camera' && (
           <Card className="mb-4">
             <CardHeader className="pb-3">
@@ -220,7 +222,6 @@ export default function CantinaPage() {
           </Card>
         )}
 
-        {/* Manual */}
         {inputMode === 'manual' && (
           <Card className="mb-4">
             <CardHeader className="pb-3">
@@ -243,12 +244,11 @@ export default function CantinaPage() {
           </Card>
         )}
 
-        {/* Results */}
         {status === 'scanning' && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-indigo-200 bg-indigo-50">
             <CardContent className="p-6 flex items-center gap-4">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent flex-shrink-0" />
-              <p className="font-medium text-blue-900">Validando...</p>
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent flex-shrink-0" />
+              <p className="font-medium text-indigo-900">Validando...</p>
             </CardContent>
           </Card>
         )}
@@ -316,7 +316,7 @@ export default function CantinaPage() {
         )}
 
         {status === 'idle' && (
-          <div className="mt-2 rounded-xl border border-slate-200 bg-white p-6 text-center">
+          <div className="app-panel mt-2 p-6 text-center">
             <UtensilsCrossed className="mx-auto h-8 w-8 text-slate-300 mb-2" />
             <p className="text-sm text-slate-400">
               {inputMode === 'camera'

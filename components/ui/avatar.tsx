@@ -18,7 +18,7 @@ export function Avatar({ initials, color = '#1d4ed8', size = 'md', className, ..
   return (
     <div
       className={cn(
-        'flex items-center justify-center rounded-full font-bold text-white flex-shrink-0',
+        'flex flex-shrink-0 items-center justify-center rounded-full font-bold text-white shadow-sm shadow-indigo-950/20',
         sizeClasses[size],
         className
       )}

@@ -93,20 +93,19 @@ export default function PortariaPage() {
     <ProtectedLayout requiredRole={['admin', 'portaria']}>
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Portaria</h1>
+          <h1 className="gradient-text text-2xl font-bold">Portaria</h1>
           <p className="mt-1 text-sm text-slate-500">
             Escaneie o QR Code do aluno para registrar entrada ou saída
           </p>
         </div>
 
-        {/* Mode switcher */}
-        <div className="mb-4 flex rounded-xl border border-slate-200 bg-white p-1">
+        <div className="app-panel mb-4 flex p-1">
           <button
             onClick={() => { setInputMode('camera'); setScannerActive(true); }}
             className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
               inputMode === 'camera'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
             <QrCode className="h-4 w-4" />
@@ -116,8 +115,8 @@ export default function PortariaPage() {
             onClick={() => { setInputMode('manual'); setScannerActive(false); }}
             className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
               inputMode === 'manual'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             }`}
           >
             <Keyboard className="h-4 w-4" />
@@ -125,7 +124,6 @@ export default function PortariaPage() {
           </button>
         </div>
 
-        {/* Camera scanner */}
         {inputMode === 'camera' && (
           <Card className="mb-4">
             <CardHeader className="pb-3">
@@ -146,7 +144,6 @@ export default function PortariaPage() {
           </Card>
         )}
 
-        {/* Manual input */}
         {inputMode === 'manual' && (
           <Card className="mb-4">
             <CardHeader className="pb-3">
@@ -169,12 +166,11 @@ export default function PortariaPage() {
           </Card>
         )}
 
-        {/* Result card */}
         {status === 'scanning' && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-indigo-200 bg-indigo-50">
             <CardContent className="p-6 flex items-center gap-4">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent flex-shrink-0" />
-              <p className="font-medium text-blue-900">Processando...</p>
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent flex-shrink-0" />
+              <p className="font-medium text-indigo-900">Processando...</p>
             </CardContent>
           </Card>
         )}
@@ -251,7 +247,7 @@ export default function PortariaPage() {
         )}
 
         {status === 'idle' && (
-          <div className="mt-2 rounded-xl border border-slate-200 bg-white p-6 text-center">
+          <div className="app-panel mt-2 p-6 text-center">
             <QrCode className="mx-auto h-8 w-8 text-slate-300 mb-2" />
             <p className="text-sm text-slate-400">
               {inputMode === 'camera'

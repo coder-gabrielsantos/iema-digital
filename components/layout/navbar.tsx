@@ -22,9 +22,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-blue-100 text-blue-700',
-  portaria: 'bg-emerald-100 text-emerald-700',
-  cantina: 'bg-amber-100 text-amber-700',
+  admin: 'bg-indigo-100 text-indigo-700 border border-indigo-200/80',
+  portaria: 'bg-emerald-100 text-emerald-700 border border-emerald-200/80',
+  cantina: 'bg-amber-100 text-amber-700 border border-amber-200/80',
 };
 
 interface NavItem {
@@ -60,17 +60,15 @@ export function Navbar({ role }: NavbarProps) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 h-16 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+      <header className="fixed left-0 right-0 top-0 z-40 h-16 border-b border-slate-200 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.06),0_4px_12px_-2px_rgba(15,23,42,0.08)] backdrop-blur-sm">
         <div className="flex h-full items-center justify-between px-4 md:px-6">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <div className="gradient-primary shadow-glow flex h-8 w-8 items-center justify-center rounded-lg">
               <ShieldCheck className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-slate-900">IEMA Digital</span>
+            <span className="gradient-text font-bold">IEMA Digital</span>
           </Link>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
             {visibleItems.map((item) => {
               const Icon = item.icon;
@@ -80,34 +78,39 @@ export function Navbar({ role }: NavbarProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'group relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                     active
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10 hover:bg-[#4338CA]'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <span
+                    className={cn(
+                      'absolute left-1 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full transition-colors',
+                      active ? 'bg-white/85' : 'bg-transparent'
+                    )}
+                  />
+                  <Icon className={cn('h-4 w-4', active ? 'text-white' : 'text-indigo-600 group-hover:text-indigo-700')} />
                   {item.label}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right side */}
           <div className="flex items-center gap-3">
             <span className={cn('hidden md:inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', ROLE_COLORS[role])}>
               {ROLE_LABELS[role] || role}
             </span>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden md:inline">Sair</span>
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -115,10 +118,9 @@ export function Navbar({ role }: NavbarProps) {
         </div>
       </header>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 pt-16 bg-white md:hidden">
-          <nav className="p-4 space-y-1">
+        <div className="fixed inset-0 z-30 bg-slate-950/40 pt-16 backdrop-blur-[2px] md:hidden">
+          <nav className="mx-4 mt-3 space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-premium-lg">
             <div className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium mb-4', ROLE_COLORS[role])}>
               {ROLE_LABELS[role] || role}
             </div>
@@ -131,20 +133,18 @@ export function Navbar({ role }: NavbarProps) {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium transition-colors',
-                    active
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-slate-700 hover:bg-slate-100'
+                    'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium transition-colors',
+                    active ? 'bg-[#4F46E5] text-white shadow-sm shadow-indigo-950/10' : 'text-slate-700 hover:bg-slate-50'
                   )}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className={cn('h-5 w-5', active ? 'text-white' : 'text-indigo-600')} />
                   {item.label}
                 </Link>
               );
             })}
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 transition-colors mt-4"
+              className="mt-4 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-base font-medium text-red-600 transition-colors hover:bg-red-50"
             >
               <LogOut className="h-5 w-5" />
               Sair do Sistema
