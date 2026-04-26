@@ -328,30 +328,23 @@ export default function CantinaPage() {
         )}
 
         {status === 'success' && result && (
-          <Card className="rounded-md border-2 border-emerald-300 bg-emerald-50 shadow-none">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
+          <Card className="rounded-md border border-emerald-200 bg-emerald-50/60 shadow-none">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3.5">
                 <StudentPhoto
                   name={result.student.name}
                   photoData={result.student.photoData}
                   photoMime={result.student.photoMime}
                   size="xl"
                   lazy={false}
-                  className="ring-4 ring-white shadow-md"
+                  className="ring-2 ring-white shadow-sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                    <span className="font-bold text-lg text-emerald-700">Refeição Registrada</span>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
+                    <span className="text-base font-semibold text-emerald-700">Refeição registrada</span>
                   </div>
-                  <p className="text-slate-900 font-semibold text-xl truncate">{result.student.name}</p>
-                  <Badge variant="success" className="mt-2">Turma {result.student.classCode}</Badge>
-                  {result.mealPeriod ? (
-                    <p className="mt-2 text-sm text-emerald-700">
-                      Período: {PERIOD_LABEL[result.mealPeriod]}
-                    </p>
-                  ) : null}
-                  <p className="mt-2 text-xs text-slate-500">{formatTime(result.timestamp)}</p>
+                  <p className="truncate text-lg font-medium text-slate-900">{result.student.name}</p>
                 </div>
               </div>
             </CardContent>
@@ -359,28 +352,23 @@ export default function CantinaPage() {
         )}
 
         {status === 'duplicate' && result && (
-          <Card className="rounded-md border-2 border-red-300 bg-red-50 shadow-none">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
+          <Card className="rounded-md border border-red-200 bg-red-50/60 shadow-none">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3.5">
                 <StudentPhoto
                   name={result.student.name}
                   photoData={result.student.photoData}
                   photoMime={result.student.photoMime}
                   size="xl"
                   lazy={false}
-                  className="ring-4 ring-red-200 shadow-md"
+                  className="ring-2 ring-red-200 shadow-sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <XCircle className="h-5 w-5 text-red-600" />
-                    <span className="font-bold text-lg text-red-700">Refeição já Registrada!</span>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <XCircle className="h-4.5 w-4.5 text-red-600" />
+                    <span className="text-base font-semibold text-red-700">Refeição já registrada</span>
                   </div>
-                  <p className="text-slate-900 font-semibold text-xl truncate">{result.student.name}</p>
-                  <Badge variant="destructive" className="mt-2">Turma {result.student.classCode}</Badge>
-                  <p className="mt-2 text-sm text-red-600">
-                    Este aluno já recebeu a refeição da{' '}
-                    {result.mealPeriod ? PERIOD_LABEL[result.mealPeriod] : 'janela atual'}.
-                  </p>
+                  <p className="truncate text-lg font-medium text-slate-900">{result.student.name}</p>
                 </div>
               </div>
             </CardContent>

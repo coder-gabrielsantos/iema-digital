@@ -41,11 +41,17 @@ async function ensureMealIndexes(Meal: ReturnType<typeof getMealModel>) {
   if (!indexSyncPromise) {
     indexSyncPromise = (async () => {
       const existingIndexes = await Meal.collection.indexes();
-      const legacyUniqueByDay = existingIndexes.find(
-        (index) => index.name === 'studentId_1_date_1' && index.unique
-      );
-      if (legacyUniqueByDay) {
-        await Meal.collection.dropIndex('studentId_1_date_1');
+      const legacyUniqueByDay = existingIndexes.find((index) => {
+        const key = index.key as Record<string, number> | undefined;
+        return (
+          index.unique === true &&
+          key?.studentId === 1 &&
+          key?.date === 1 &&
+          typeof key?.mealPeriod === 'undefined'
+        );
+      });
+      if (legacyUniqueByDay?.name) {
+        await Meal.collection.dropIndex(legacyUniqueByDay.name);
       }
       await Meal.syncIndexes();
     })().catch((error) => {
@@ -138,14 +144,36 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const meal = await Meal.create({
-    studentId: student._id.toString(),
-    studentName: student.name,
-    classCode: student.classCode,
-    timestamp: new Date(),
-    date: today,
-    mealPeriod,
-  });
+  let meal;
+  try {
+    meal = await Meal.create({
+      studentId: student._id.toString(),
+      studentName: student.name,
+      classCode: student.classCode,
+      timestamp: new Date(),
+      date: today,
+      mealPeriod,
+    });
+  } catch (error) {
+    if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
+      return NextResponse.json(
+        {
+          error: 'Refeição já registrada para este aluno hoje',
+          alreadyServed: true,
+          mealPeriod,
+          student: {
+            studentId: student._id.toString(),
+            name: student.name,
+            classCode: student.classCode,
+            photoMime: student.photoMime,
+            photoData: student.photoData,
+          },
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 
   return NextResponse.json({
     success: true,
