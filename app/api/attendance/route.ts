@@ -63,14 +63,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Aluno não encontrado' }, { status: 404 });
   }
 
+  const today = getTodayString();
   const currentPresence = await Presence.findOne({ studentId: student._id.toString() }).lean();
-  const currentlyPresent = Boolean(currentPresence?.isPresent);
+  const currentPresenceDate = currentPresence?.date || '';
+  const isPresenceFromToday = currentPresenceDate === today;
+  const currentlyPresent = isPresenceFromToday && Boolean(currentPresence?.isPresent);
   const type = currentlyPresent ? 'exit' : 'entry';
   const now = new Date();
   const lastStatusUpdate =
-    currentPresence?.updatedAt instanceof Date
+    isPresenceFromToday && currentPresence?.updatedAt instanceof Date
       ? currentPresence.updatedAt
-      : currentPresence?.updatedAt
+      : isPresenceFromToday && currentPresence?.updatedAt
       ? new Date(currentPresence.updatedAt)
       : null;
 
@@ -94,11 +97,11 @@ export async function POST(req: NextRequest) {
       classCode: student.classCode,
       type,
       timestamp: now,
-      date: getTodayString(),
+      date: today,
     }),
     Presence.findOneAndUpdate(
       { studentId: student._id.toString() },
-      { $set: { isPresent: !currentlyPresent } },
+      { $set: { date: today, isPresent: !currentlyPresent } },
       { upsert: true, new: true }
     ),
   ]);

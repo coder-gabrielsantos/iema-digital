@@ -142,7 +142,14 @@ export function Navbar({ role }: NavbarProps) {
             <button
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="rounded-lg p-2 text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+              aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={mobileOpen}
+              className={cn(
+                'inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors duration-200 md:hidden',
+                mobileOpen
+                  ? 'border-slate-300 bg-slate-100 text-slate-900'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              )}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -151,8 +158,8 @@ export function Navbar({ role }: NavbarProps) {
       </header>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 bg-slate-950/35 pt-16 backdrop-blur-[1px] md:hidden">
-          <nav className="mx-4 mt-3 space-y-1 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm animate-in slide-in-from-top-1 fade-in duration-300">
+        <div className="fixed inset-0 z-30 bg-slate-900/20 pt-16 md:hidden">
+          <nav className="mx-4 mt-3 space-y-1.5 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm animate-in slide-in-from-top-1 fade-in duration-200">
             {visibleItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -161,18 +168,12 @@ export function Navbar({ role }: NavbarProps) {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    'group relative flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium transition-colors duration-200',
+                    'flex items-center rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors duration-150',
                     active
                       ? 'bg-slate-100 text-slate-900'
-                      : 'text-slate-700 hover:bg-slate-50'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                   )}
                 >
-                  <span
-                    className={cn(
-                      'absolute bottom-0 left-4 right-4 h-0.5 rounded-full transition-all duration-300',
-                      active ? 'bg-slate-900' : 'bg-transparent group-hover:bg-slate-200'
-                    )}
-                  />
                   {item.label}
                 </Link>
               );
@@ -182,19 +183,19 @@ export function Navbar({ role }: NavbarProps) {
                 type="button"
                 onClick={() => void handleDownloadCards()}
                 disabled={downloadingCards}
-                className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-base font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55"
+                className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55"
               >
                 {downloadingCards ? 'Gerando...' : 'QR-code'}
-                <QrCode className="h-5 w-5" />
+                <QrCode className="h-4 w-4" />
               </button>
             ) : null}
             <button
               type="button"
               onClick={handleLogout}
-              className="mt-3 flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-base font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900"
+              className="mt-1 flex w-full items-center justify-between rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900"
             >
-              Sair do Sistema
-              <LogOut className="h-5 w-5" />
+              Sair
+              <LogOut className="h-4 w-4" />
             </button>
           </nav>
         </div>

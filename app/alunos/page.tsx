@@ -2,11 +2,16 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Search,
   RefreshCw,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Select from 'react-select';
+import { DayPicker } from 'react-day-picker';
+import { ptBR } from 'date-fns/locale';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +36,8 @@ interface DashboardData {
   totalStudents: number;
   presentStudents: number;
   presentPercent: number;
+  date: string;
+  isToday: boolean;
 }
 
 type Filter = 'all' | 'present' | 'absent';
@@ -41,21 +48,31 @@ const FILTER_OPTIONS: Array<{ value: Filter; label: string }> = [
   { value: 'absent', label: 'Ausentes' },
 ];
 
+function getInputDateString(date = new Date()) {
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return offsetDate.toISOString().slice(0, 10);
+}
+
+function parseDateString(dateString: string) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+}
+
 export default function AlunosPage() {
+  const todayInputValue = getInputDateString();
   const [students, setStudents] = useState<Student[]>([]);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [selectedDate, setSelectedDate] = useState(todayInputValue);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const calendarContainerRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [filteredCount, setFilteredCount] = useState(0);
   const [qrStudent, setQrStudent] = useState<StudentDetail | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
-  const [refreshSpinning, setRefreshSpinning] = useState(true);
-  const refreshSpinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refreshSpinStartedAtRef = useRef(Date.now());
 
   const normalizedSearch = search.trim().toLowerCase();
   const visibleStudents = useMemo(() => {
@@ -78,6 +95,7 @@ export default function AlunosPage() {
       params.set('status', filter);
       params.set('page', String(activePage));
       params.set('pageSize', String(PAGE_SIZE));
+      params.set('date', selectedDate);
 
       const res = await fetch(`/api/students?${params}`);
       if (!res.ok) {
@@ -92,27 +110,26 @@ export default function AlunosPage() {
       setStudents(data.items);
       setTotalPages(data.pagination.totalPages || 1);
       setPage(data.pagination.page || 1);
-      setFilteredCount(data.pagination.total || 0);
     } catch (e) {
       console.error(e);
       setStudents([]);
-      setFilteredCount(0);
       setError('Não foi possível carregar os alunos. Tente novamente.');
     } finally {
       setLoading(false);
     }
-  }, [search, filter, page]);
+  }, [search, filter, page, selectedDate]);
 
   const fetchDashboard = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const params = new URLSearchParams({ date: selectedDate });
+      const res = await fetch(`/api/dashboard?${params}`);
       if (!res.ok) return;
       const data: DashboardData = await res.json();
       setDashboard(data);
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [selectedDate]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchStudents(page), fetchDashboard()]);
@@ -126,36 +143,19 @@ export default function AlunosPage() {
   }, [fetchStudents, fetchDashboard, page]);
 
   useEffect(() => {
-    if (loading) {
-      if (refreshSpinTimeoutRef.current) {
-        clearTimeout(refreshSpinTimeoutRef.current);
-        refreshSpinTimeoutRef.current = null;
-      }
-      refreshSpinStartedAtRef.current = Date.now();
-      setRefreshSpinning(true);
-      return;
+    if (!isCalendarOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (!calendarContainerRef.current) return;
+      if (calendarContainerRef.current.contains(event.target as Node)) return;
+      setIsCalendarOpen(false);
     }
 
-    const elapsed = Date.now() - refreshSpinStartedAtRef.current;
-    const remaining = Math.max(0, 1000 - elapsed);
-
-    if (remaining === 0) {
-      setRefreshSpinning(false);
-      return;
-    }
-
-    refreshSpinTimeoutRef.current = setTimeout(() => {
-      setRefreshSpinning(false);
-      refreshSpinTimeoutRef.current = null;
-    }, remaining);
-
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      if (refreshSpinTimeoutRef.current) {
-        clearTimeout(refreshSpinTimeoutRef.current);
-        refreshSpinTimeoutRef.current = null;
-      }
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [loading]);
+  }, [isCalendarOpen]);
 
   async function openQr(student: Student) {
     setLoadingQr(true);
@@ -174,6 +174,10 @@ export default function AlunosPage() {
   const totalStudents = dashboard?.totalStudents ?? 0;
   const absentCount = totalStudents - presentCount;
   const attendanceRate = dashboard?.presentPercent ?? 0;
+  const isSelectedDateToday = selectedDate === todayInputValue;
+  const selectedDateObj = parseDateString(selectedDate);
+  const selectedDateLabel = selectedDateObj.toLocaleDateString('pt-BR');
+  const todayDateObj = parseDateString(todayInputValue);
 
   return (
     <ProtectedLayout requiredRole="admin">
@@ -183,18 +187,96 @@ export default function AlunosPage() {
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Painel de Alunos</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Lista unificada com presença em tempo real para acompanhamento da administração
+              {isSelectedDateToday
+                ? 'Lista unificada com presença em tempo real para acompanhamento da administração'
+                : 'Histórico de frequência salvo para a data selecionada'}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshAll}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshSpinning ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div ref={calendarContainerRef} className="relative">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCalendarOpen((open) => !open)}
+                className="h-11 w-full justify-between px-3 sm:w-56"
+                aria-label="Selecionar data da frequência"
+                aria-expanded={isCalendarOpen}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                    <CalendarDays className="h-4 w-4" />
+                  </span>
+                  <span>{selectedDateLabel}</span>
+                </span>
+              </Button>
+              {isCalendarOpen ? (
+                <div className="absolute right-0 z-30 mt-3 w-[20rem] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-[0_24px_70px_-35px_rgba(15,23,42,0.55)] backdrop-blur">
+                  <DayPicker
+                    mode="single"
+                    locale={ptBR}
+                    weekStartsOn={0}
+                    selected={selectedDateObj}
+                    onSelect={(day) => {
+                      if (!day) return;
+                      setSelectedDate(getInputDateString(day));
+                      setPage(1);
+                      setIsCalendarOpen(false);
+                    }}
+                    disabled={{ after: todayDateObj }}
+                    className="w-full"
+                    classNames={{
+                      root: 'w-full text-slate-900',
+                      month: 'space-y-3',
+                      month_caption: 'mb-1 flex h-10 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold capitalize text-slate-900',
+                      caption_label: 'tracking-tight',
+                      nav: 'absolute left-4 right-4 top-4 flex items-center justify-between',
+                      button_previous: 'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-40',
+                      button_next: 'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-40',
+                      month_grid: 'w-full border-separate border-spacing-y-1',
+                      weekdays: 'grid grid-cols-7 px-1',
+                      weekday: 'pb-1 text-center text-[0.7rem] font-bold uppercase tracking-wide text-slate-400',
+                      week: 'grid grid-cols-7',
+                      day: 'text-center',
+                      day_button: 'mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25',
+                      selected: '[&>button]:bg-indigo-600 [&>button]:text-white [&>button]:shadow-[0_10px_22px_-10px_rgba(79,70,229,0.95)] [&>button]:hover:bg-indigo-600 [&>button]:hover:text-white',
+                      today: '[&>button]:font-bold [&>button]:text-indigo-700 [&>button]:ring-1 [&>button]:ring-indigo-200',
+                      disabled: '[&>button]:cursor-not-allowed [&>button]:text-slate-300 [&>button]:hover:bg-transparent [&>button]:hover:text-slate-300',
+                    }}
+                    components={{
+                      Chevron: ({ orientation, ...props }) => (
+                        orientation === 'left'
+                          ? <ChevronLeft className="h-4 w-4" {...props} />
+                          : <ChevronRight className="h-4 w-4" {...props} />
+                      ),
+                    }}
+                  />
+                </div>
+              ) : null}
+            </div>
+            {!isSelectedDateToday ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedDate(todayInputValue);
+                  setPage(1);
+                  setIsCalendarOpen(false);
+                }}
+              >
+                Hoje
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshAll}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         <div className="mb-6 grid gap-3 md:grid-cols-4">
@@ -207,19 +289,25 @@ export default function AlunosPage() {
           <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-emerald-600">{presentCount}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Presentes</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isSelectedDateToday ? 'Presentes' : 'Com frequência'}
+              </p>
             </CardContent>
           </Card>
           <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-rose-500">{Math.max(absentCount, 0)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Ausentes</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isSelectedDateToday ? 'Ausentes' : 'Sem frequência'}
+              </p>
             </CardContent>
           </Card>
           <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-violet-600">{attendanceRate}%</p>
-              <p className="text-xs text-slate-500 mt-0.5">Taxa de Presença</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {isSelectedDateToday ? 'Taxa de Presença' : 'Taxa de Frequência'}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -338,11 +426,11 @@ export default function AlunosPage() {
                     <div className="justify-self-start md:justify-self-end">
                       {student.isPresent ? (
                         <Badge variant="success" className="w-fit">
-                          Presente
+                          {isSelectedDateToday ? 'Presente' : 'Com frequência'}
                         </Badge>
                       ) : (
                         <Badge variant="secondary" className="w-fit">
-                          Ausente
+                          {isSelectedDateToday ? 'Ausente' : 'Sem frequência'}
                         </Badge>
                       )}
                     </div>

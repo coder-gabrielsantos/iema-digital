@@ -142,10 +142,10 @@ export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }:
         <Button
           type="button"
           onClick={onRequestStart}
-          className="h-10 rounded-full bg-indigo-500 px-5 text-white hover:bg-indigo-600"
+          aria-label="Abrir câmera"
+          className="h-10 w-10 rounded-full bg-indigo-500 p-0 text-white hover:bg-indigo-600"
         >
-          <Play className="mr-2 h-4 w-4" />
-          Abrir câmera
+          <Play className="h-4 w-4" />
         </Button>
       </div>
     );

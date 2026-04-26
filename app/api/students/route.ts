@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectPlatformDB, connectStudentsDB } from '@/lib/mongodb-connections';
 import { getStudentModel } from '@/lib/models/Student';
+import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getPresenceModel } from '@/lib/models/Presence';
+import { getTodayString } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,12 +12,16 @@ export async function GET(req: NextRequest) {
       connectPlatformDB(),
     ]);
     const Student = getStudentModel(studentsConn);
+    const Attendance = getAttendanceModel(platformConn);
     const Presence = getPresenceModel(platformConn);
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || 'all';
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
     const pageSize = Math.min(50, Math.max(5, Number(searchParams.get('pageSize') || '12')));
+    const today = getTodayString();
+    const selectedDate = normalizeDate(searchParams.get('date')) || today;
+    const isToday = selectedDate === today;
 
     const query: Record<string, unknown> = {};
     if (search) {
@@ -30,10 +36,13 @@ export async function GET(req: NextRequest) {
       .lean();
 
     const studentIds = students.map((s) => s._id.toString());
-    const presenceRecords = await Presence.find({ studentId: { $in: studentIds }, isPresent: true })
-      .select('studentId')
-      .lean();
-    const presentSet = new Set(presenceRecords.map((p) => p.studentId));
+    const presentSet = await getPresentStudentSet(
+      studentIds,
+      selectedDate,
+      isToday,
+      Presence,
+      Attendance
+    );
 
     const withPresence = students.map((s) => ({ ...s, isPresent: presentSet.has(s._id.toString()) }));
 
@@ -64,6 +73,8 @@ export async function GET(req: NextRequest) {
         total: withPresence.length,
         present: withPresence.filter((student) => student.isPresent).length,
         absent: withPresence.filter((student) => !student.isPresent).length,
+        date: selectedDate,
+        isToday,
       },
       pagination: {
         page: safePage,
@@ -79,4 +90,39 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function normalizeDate(date: string | null): string | null {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  return date;
+}
+
+async function getPresentStudentSet(
+  studentIds: string[],
+  date: string,
+  isToday: boolean,
+  Presence: ReturnType<typeof getPresenceModel>,
+  Attendance: ReturnType<typeof getAttendanceModel>
+) {
+  if (studentIds.length === 0) return new Set<string>();
+
+  if (isToday) {
+    const presenceRecords = await Presence.find({
+      studentId: { $in: studentIds },
+      date,
+      isPresent: true,
+    })
+      .select('studentId')
+      .lean();
+
+    return new Set(presenceRecords.map((p) => p.studentId));
+  }
+
+  const attendedStudentIds = await Attendance.distinct('studentId', {
+    studentId: { $in: studentIds },
+    date,
+    type: 'entry',
+  });
+
+  return new Set(attendedStudentIds.map(String));
 }
