@@ -136,17 +136,18 @@ export default function PortariaPage() {
       if (!studentId) {
         const now = Date.now();
         const toastId = `scan-error-${now}`;
+        const errorToast: ScanToast = {
+          id: toastId,
+          studentId: '',
+          name: '—',
+          classCode: '',
+          type: 'entry',
+          timestamp: new Date(now),
+          status: 'error',
+          error: 'QR Code inválido para aluno',
+        };
         setToasts((prev) => [
-          {
-            id: toastId,
-            studentId: '',
-            name: '—',
-            classCode: '',
-            type: 'entry',
-            timestamp: new Date(now),
-            status: 'error',
-            error: 'QR Code inválido para aluno',
-          },
+          errorToast,
           ...prev,
         ].slice(0, 8));
         scheduleRemoval(toastId);
