@@ -29,9 +29,15 @@ interface MealResult {
   alreadyServed?: boolean;
   student: StudentInfo;
   timestamp: Date;
+  mealPeriod?: 'morning' | 'lunch' | 'afternoon';
 }
 
 type ScanStatus = 'idle' | 'scanning' | 'success' | 'duplicate' | 'error';
+const PERIOD_LABEL: Record<'morning' | 'lunch' | 'afternoon', string> = {
+  morning: 'manhã',
+  lunch: 'almoço',
+  afternoon: 'tarde',
+};
 
 export default function CantinaPage() {
   const [presentCount, setPresentCount] = useState(0);
@@ -44,6 +50,7 @@ export default function CantinaPage() {
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<MealResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [scanFeedbackToken, setScanFeedbackToken] = useState(0);
   const [inputMode, setInputMode] = useState<'camera' | 'manual'>('camera');
   const processingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -134,14 +141,25 @@ export default function CantinaPage() {
 
         if (res.status === 409 && data.alreadyServed) {
           setStatus('duplicate');
-          setResult({ success: false, alreadyServed: true, student: data.student, timestamp: new Date() });
+          setResult({
+            success: false,
+            alreadyServed: true,
+            mealPeriod: data.mealPeriod,
+            student: data.student,
+            timestamp: new Date(),
+          });
           fetchStats();
         } else if (!res.ok) {
           setStatus('error');
           setErrorMsg(data.error || 'Erro ao processar');
         } else {
           setStatus('success');
-          setResult({ success: true, student: data.student, timestamp: new Date() });
+          setResult({
+            success: true,
+            mealPeriod: data.mealPeriod,
+            student: data.student,
+            timestamp: new Date(),
+          });
           fetchStats();
         }
       } catch {
@@ -162,6 +180,7 @@ export default function CantinaPage() {
 
   const handleScan = useCallback(
     (data: string) => {
+      setScanFeedbackToken((prev) => prev + 1);
       const studentId = parseStudentIdFromQr(data);
       if (!studentId) {
         setStatus('error');
@@ -263,6 +282,7 @@ export default function CantinaPage() {
               <QrScanner
                 onScan={handleScan}
                 active={scannerActive}
+                feedbackToken={scanFeedbackToken}
                 onRequestStart={() => setScannerActive(true)}
               />
             </div>
@@ -326,6 +346,11 @@ export default function CantinaPage() {
                   </div>
                   <p className="text-slate-900 font-semibold text-xl truncate">{result.student.name}</p>
                   <Badge variant="success" className="mt-2">Turma {result.student.classCode}</Badge>
+                  {result.mealPeriod ? (
+                    <p className="mt-2 text-sm text-emerald-700">
+                      Período: {PERIOD_LABEL[result.mealPeriod]}
+                    </p>
+                  ) : null}
                   <p className="mt-2 text-xs text-slate-500">{formatTime(result.timestamp)}</p>
                 </div>
               </div>
@@ -352,7 +377,10 @@ export default function CantinaPage() {
                   </div>
                   <p className="text-slate-900 font-semibold text-xl truncate">{result.student.name}</p>
                   <Badge variant="destructive" className="mt-2">Turma {result.student.classCode}</Badge>
-                  <p className="mt-2 text-sm text-red-600">Este aluno já recebeu sua refeição hoje.</p>
+                  <p className="mt-2 text-sm text-red-600">
+                    Este aluno já recebeu a refeição da{' '}
+                    {result.mealPeriod ? PERIOD_LABEL[result.mealPeriod] : 'janela atual'}.
+                  </p>
                 </div>
               </div>
             </CardContent>
