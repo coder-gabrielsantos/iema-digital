@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CameraOff, Play } from 'lucide-react';
+import { CameraOff, Check, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QrScannerProps {
@@ -19,11 +19,40 @@ export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }:
   } | null>(null);
   const [error, setError] = useState('');
   const [retryToken, setRetryToken] = useState(0);
+  const feedbackOverlayRef = useRef<HTMLDivElement | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onScanRef = useRef(onScan);
 
   useEffect(() => {
     onScanRef.current = onScan;
   }, [onScan]);
+
+  useEffect(() => {
+    if (!active || feedbackToken <= 0) return;
+
+    const overlay = feedbackOverlayRef.current;
+    if (!overlay) return;
+
+    overlay.classList.remove('opacity-0');
+    overlay.classList.add('opacity-100');
+
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+    }
+
+    feedbackTimeoutRef.current = setTimeout(() => {
+      overlay.classList.remove('opacity-100');
+      overlay.classList.add('opacity-0');
+    }, 650);
+  }, [active, feedbackToken]);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function isIgnorableStartError(error: unknown): boolean {
     const message = getErrorMessage(error);
@@ -157,6 +186,14 @@ export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }:
         id="qr-reader"
         className="w-full min-h-[360px] [&>div]:!border-0 [&_video]:!h-[360px] [&_video]:!w-full [&_video]:object-cover"
       />
+      <div
+        ref={feedbackOverlayRef}
+        className="pointer-events-none absolute inset-0 flex items-center justify-center bg-emerald-500/12 opacity-0 transition-opacity duration-150"
+      >
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+            <Check className="h-8 w-8" strokeWidth={3} />
+          </div>
+      </div>
     </div>
   );
 }
