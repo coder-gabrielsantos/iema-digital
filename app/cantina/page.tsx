@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { StudentPhoto } from '@/components/ui/student-photo';
-import { formatTime } from '@/lib/utils';
+import { formatTime, parseStudentIdFromQr } from '@/lib/utils';
 
 const QrScanner = dynamic(
   () => import('@/components/portaria/qr-scanner').then((m) => m.QrScanner),
@@ -160,7 +160,19 @@ export default function CantinaPage() {
     [fetchStats]
   );
 
-  const handleScan = useCallback((data: string) => processStudentInput(data, 'id'), [processStudentInput]);
+  const handleScan = useCallback(
+    (data: string) => {
+      const studentId = parseStudentIdFromQr(data);
+      if (!studentId) {
+        setStatus('error');
+        setResult(null);
+        setErrorMsg('QR Code inválido para aluno');
+        return;
+      }
+      void processStudentInput(studentId, 'id');
+    },
+    [processStudentInput]
+  );
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();

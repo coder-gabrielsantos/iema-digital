@@ -7,7 +7,7 @@ import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatTime } from '@/lib/utils';
+import { formatTime, parseStudentIdFromQr } from '@/lib/utils';
 
 const QrScanner = dynamic(
   () => import('@/components/portaria/qr-scanner').then((m) => m.QrScanner),
@@ -55,7 +55,7 @@ export default function PortariaPage() {
     async (value: string, mode: 'id' | 'name') => {
       const key = value.trim();
       if (!key) return;
-      const showToast = mode === 'name';
+      const showToast = true;
 
       // Per-QR debounce
       const now = Date.now();
@@ -132,9 +132,29 @@ export default function PortariaPage() {
   const handleScan = useCallback(
     (data: string) => {
       setScanFeedbackToken((prev) => prev + 1);
-      void processStudentInput(data, 'id');
+      const studentId = parseStudentIdFromQr(data);
+      if (!studentId) {
+        const now = Date.now();
+        const toastId = `scan-error-${now}`;
+        setToasts((prev) => [
+          {
+            id: toastId,
+            studentId: '',
+            name: '—',
+            classCode: '',
+            type: 'entry',
+            timestamp: new Date(now),
+            status: 'error',
+            error: 'QR Code inválido para aluno',
+          },
+          ...prev,
+        ].slice(0, 8));
+        scheduleRemoval(toastId);
+        return;
+      }
+      void processStudentInput(studentId, 'id');
     },
-    [processStudentInput]
+    [processStudentInput, scheduleRemoval]
   );
 
   const handleManualSubmit = async (e: React.FormEvent) => {
