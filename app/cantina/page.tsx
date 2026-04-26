@@ -217,7 +217,7 @@ export default function CantinaPage() {
             disabled={loadingStats}
           >
             <RefreshCw className={`h-4 w-4 ${refreshSpinning ? 'animate-spin' : ''}`} />
-            Atualizar Contagem
+            Atualizar contagem
           </Button>
         </div>
 
