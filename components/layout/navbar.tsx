@@ -5,9 +5,11 @@ import Link from 'next/link';
 import {
   LogOut,
   Menu,
+  QrCode,
   X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -22,6 +24,11 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/cantina', label: 'Cantina', roles: ['admin', 'cantina'] },
 ];
 
+interface StudentCard {
+  _id: string;
+  name: string;
+}
+
 interface NavbarProps {
   role: string;
 }
@@ -30,6 +37,8 @@ export function Navbar({ role }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cardStudents, setCardStudents] = useState<StudentCard[]>([]);
+  const [downloadingCards, setDownloadingCards] = useState(false);
 
   function handleLogout() {
     localStorage.removeItem('iema_role');
@@ -37,7 +46,43 @@ export function Navbar({ role }: NavbarProps) {
     router.push('/login');
   }
 
+  async function handleDownloadCards() {
+    setDownloadingCards(true);
+
+    try {
+      const res = await fetch('/api/student-cards');
+      if (!res.ok) {
+        throw new Error(`Falha ao carregar cartões (HTTP ${res.status})`);
+      }
+
+      const data: { items: StudentCard[] } = await res.json();
+      setCardStudents(data.items);
+      setMobileOpen(false);
+
+      await new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => resolve());
+        });
+      });
+
+      const previousTitle = document.title;
+      document.title = 'cartoes-alunos-iema';
+      window.print();
+
+      window.setTimeout(() => {
+        document.title = previousTitle;
+        setCardStudents([]);
+      }, 500);
+    } catch (error) {
+      console.error(error);
+      window.alert('Não foi possível baixar os cartões. Tente novamente.');
+    } finally {
+      setDownloadingCards(false);
+    }
+  }
+
   const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const canDownloadCards = role === 'admin';
 
   return (
     <>
@@ -74,7 +119,20 @@ export function Navbar({ role }: NavbarProps) {
             })}
             </nav>
 
+            {canDownloadCards ? (
+              <button
+                type="button"
+                onClick={() => void handleDownloadCards()}
+                disabled={downloadingCards}
+                className="hidden items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55 md:flex"
+              >
+                <QrCode className="h-4 w-4" />
+                {downloadingCards ? 'Gerando...' : 'QR-code'}
+              </button>
+            ) : null}
+
             <button
+              type="button"
               onClick={handleLogout}
               className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900"
             >
@@ -82,6 +140,7 @@ export function Navbar({ role }: NavbarProps) {
               <LogOut className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
               className="rounded-lg p-2 text-slate-600 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-900 md:hidden"
             >
@@ -118,7 +177,19 @@ export function Navbar({ role }: NavbarProps) {
                 </Link>
               );
             })}
+            {canDownloadCards ? (
+              <button
+                type="button"
+                onClick={() => void handleDownloadCards()}
+                disabled={downloadingCards}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-base font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55"
+              >
+                {downloadingCards ? 'Gerando...' : 'QR-code'}
+                <QrCode className="h-5 w-5" />
+              </button>
+            ) : null}
             <button
+              type="button"
               onClick={handleLogout}
               className="mt-3 flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-base font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900"
             >
@@ -128,6 +199,96 @@ export function Navbar({ role }: NavbarProps) {
           </nav>
         </div>
       )}
+      <div id="student-cards-print-root" aria-hidden="true">
+        <div className="student-cards-print-grid">
+          {cardStudents.map((student) => (
+            <article key={student._id} className="student-card-print-item">
+              <p className="student-card-print-name">{student.name}</p>
+              <div className="student-card-print-qr">
+                <QRCodeSVG value={student._id} size={160} level="H" marginSize={1} />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+      <style jsx global>{`
+        #student-cards-print-root {
+          display: none;
+        }
+
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
+
+        @media print {
+          html,
+          body {
+            background: #ffffff !important;
+          }
+
+          header,
+          .app-shell-main {
+            display: none !important;
+          }
+
+          #student-cards-print-root {
+            display: block !important;
+            width: 190mm;
+            margin: 0 auto;
+            color: #111827;
+          }
+
+          .student-cards-print-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 58mm);
+            gap: 4mm;
+            justify-content: center;
+          }
+
+          .student-card-print-item {
+            display: flex;
+            width: 58mm;
+            height: 65mm;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 0.35mm solid #111827;
+            border-radius: 2mm;
+            padding: 3mm;
+            background: #ffffff;
+          }
+
+          .student-card-print-name {
+            display: -webkit-box;
+            min-height: 10mm;
+            max-height: 10mm;
+            margin: 0 0 2mm;
+            overflow: hidden;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            text-align: center;
+            font-size: 8.5pt;
+            font-weight: 700;
+            line-height: 1.15;
+          }
+
+          .student-card-print-qr {
+            display: flex;
+            width: 43mm;
+            height: 43mm;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .student-card-print-qr svg {
+            width: 42mm;
+            height: 42mm;
+          }
+        }
+      `}</style>
     </>
   );
 }
