@@ -43,7 +43,7 @@ export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }:
     feedbackTimeoutRef.current = setTimeout(() => {
       overlay.classList.remove('opacity-100');
       overlay.classList.add('opacity-0');
-    }, 650);
+    }, 350);
   }, [active, feedbackToken]);
 
   useEffect(() => {
