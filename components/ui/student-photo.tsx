@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { compressStudentPhotoForThumbnail } from '@/lib/compress-student-photo';
 
 interface StudentPhotoProps extends React.HTMLAttributes<HTMLDivElement> {
   name: string;
@@ -8,6 +9,11 @@ interface StudentPhotoProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** When true (default), the image is only mounted near the viewport to avoid decoding many base64 photos at once. */
   lazy?: boolean;
+  /**
+   * Redimensiona e comprime no cliente (lista/tabela). Por padrão segue `lazy`:
+   * listas usam miniatura leve; `lazy={false}` (modal, cantina) mantém a foto original.
+   */
+  thumbnail?: boolean;
 }
 
 const sizeClasses = {
@@ -15,6 +21,14 @@ const sizeClasses = {
   md: 'h-10 w-10 text-sm',
   lg: 'h-14 w-14 text-lg',
   xl: 'h-20 w-20 text-2xl',
+};
+
+/** Lado máximo da miniatura (~2× o CSS px para nitidez em telas densas). */
+const thumbnailMaxPx: Record<NonNullable<StudentPhotoProps['size']>, number> = {
+  sm: 64,
+  md: 80,
+  lg: 112,
+  xl: 160,
 };
 
 function getInitials(name: string): string {
@@ -42,14 +56,18 @@ export function StudentPhoto({
   photoMime = 'image/jpeg',
   size = 'md',
   lazy = true,
+  thumbnail: thumbnailProp,
   className,
   ...props
 }: StudentPhotoProps) {
+  const thumbnail = thumbnailProp ?? lazy;
   const containerRef = React.useRef<HTMLDivElement>(null);
   const hasPhoto = Boolean(photoData && photoData.length > 10);
   const [revealed, setRevealed] = React.useState(!lazy);
+  const [thumbnailSrc, setThumbnailSrc] = React.useState<string | null>(null);
   const initials = getInitials(name);
   const color = stringToColor(name);
+  const maxThumbPx = thumbnailMaxPx[size];
 
   React.useEffect(() => {
     if (!lazy) {
@@ -68,14 +86,47 @@ export function StudentPhoto({
           io.disconnect();
         }
       },
-      { root: null, rootMargin: '96px', threshold: 0 }
+      { root: null, rootMargin: '160px', threshold: 0 }
     );
     io.observe(node);
     return () => io.disconnect();
   }, [lazy, hasPhoto, photoData]);
 
-  const showImage = hasPhoto && revealed;
-  const showPlaceholder = hasPhoto && lazy && !revealed;
+  React.useEffect(() => {
+    if (!thumbnail) {
+      setThumbnailSrc(null);
+      return;
+    }
+    if (!hasPhoto || !revealed || !photoData) {
+      setThumbnailSrc(null);
+      return;
+    }
+
+    let cancelled = false;
+    setThumbnailSrc(null);
+
+    void compressStudentPhotoForThumbnail(photoData, photoMime, maxThumbPx, 0.68).then(
+      (url) => {
+        if (!cancelled) setThumbnailSrc(url);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [thumbnail, hasPhoto, revealed, photoData, photoMime, maxThumbPx]);
+
+  const imgSrc = thumbnail
+    ? thumbnailSrc
+    : hasPhoto && revealed
+      ? `data:${photoMime};base64,${photoData}`
+      : null;
+
+  const showImage = Boolean(imgSrc);
+  const showPlaceholder =
+    hasPhoto &&
+    ((lazy && !revealed) ||
+      (thumbnail && revealed && thumbnailSrc === null));
 
   return (
     <div
@@ -96,10 +147,11 @@ export function StudentPhoto({
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`data:${photoMime};base64,${photoData}`}
+          src={imgSrc!}
           alt={name}
           loading={lazy ? 'lazy' : 'eager'}
           decoding="async"
+          fetchPriority={lazy ? 'low' : 'high'}
           className="relative z-[1] h-full w-full object-cover"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.display = 'none';
