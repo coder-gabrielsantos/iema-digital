@@ -134,10 +134,13 @@ export function Navbar({ role }: NavbarProps) {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900"
+              className={cn(
+                'order-2 flex items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors duration-200 md:order-none',
+                'h-10 w-10 shrink-0 border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 md:h-auto md:w-auto md:border-red-200 md:px-3 md:py-2'
+              )}
             >
               <span className="hidden md:inline">Sair</span>
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-5 w-5 md:h-4 md:w-4" />
             </button>
             <button
               type="button"
@@ -145,7 +148,7 @@ export function Navbar({ role }: NavbarProps) {
               aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
               aria-expanded={mobileOpen}
               className={cn(
-                'inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors duration-200 md:hidden',
+                'order-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200 md:order-none md:hidden',
                 mobileOpen
                   ? 'border-slate-300 bg-slate-100 text-slate-900'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -189,14 +192,6 @@ export function Navbar({ role }: NavbarProps) {
                 <QrCode className="h-4 w-4" />
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="mt-1 flex w-full items-center justify-between rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900"
-            >
-              Sair
-              <LogOut className="h-4 w-4" />
-            </button>
           </nav>
         </div>
       )}

@@ -48,6 +48,31 @@ const FILTER_OPTIONS: Array<{ value: Filter; label: string }> = [
   { value: 'absent', label: 'Ausentes' },
 ];
 
+const FILTER_SELECT_STYLES = {
+  control: (base: object, state: { isFocused?: boolean }) => ({
+    ...base,
+    minHeight: 44,
+    height: 44,
+    borderRadius: 6,
+    borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
+    boxShadow: 'none',
+    '&:hover': { borderColor: '#818cf8' },
+  }),
+  valueContainer: (base: object) => ({
+    ...base,
+    height: 44,
+    paddingInline: 10,
+    paddingBlock: 0,
+  }),
+  indicatorsContainer: (base: object) => ({ ...base, height: 44 }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b' }),
+  menu: (base: object) => ({ ...base, zIndex: 20 }),
+};
+
+/** ~5 opções visíveis; 190px cortava a 5ª linha (opções ~40–44px). */
+const CLASS_SELECT_MENU_MAX_HEIGHT = 248;
+
 function getInputDateString(date = new Date()) {
   const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return offsetDate.toISOString().slice(0, 10);
@@ -66,6 +91,8 @@ export default function AlunosPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [classFilter, setClassFilter] = useState('');
+  const [classCodes, setClassCodes] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayInputValue);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const calendarContainerRef = useRef<HTMLDivElement | null>(null);
@@ -78,12 +105,18 @@ export default function AlunosPage() {
   const visibleStudents = useMemo(() => {
     if (!normalizedSearch) return students;
 
-    return students.filter((student) => (
-      student.name.toLowerCase().includes(normalizedSearch) ||
-      student.classCode.toLowerCase().includes(normalizedSearch) ||
-      student._id.toLowerCase().includes(normalizedSearch)
-    ));
+    return students.filter((student) =>
+      student.name.toLowerCase().includes(normalizedSearch)
+    );
   }, [students, normalizedSearch]);
+
+  const classFilterOptions = useMemo(
+    () => [
+      { value: '', label: 'Todas as turmas' },
+      ...classCodes.map((code) => ({ value: code, label: code })),
+    ],
+    [classCodes]
+  );
 
   const fetchStudents = useCallback(async (activePage = page) => {
     setLoading(true);
@@ -92,6 +125,7 @@ export default function AlunosPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      if (classFilter) params.set('classCode', classFilter);
       params.set('status', filter);
       params.set('page', String(activePage));
       params.set('pageSize', String(PAGE_SIZE));
@@ -104,10 +138,14 @@ export default function AlunosPage() {
 
       const data: {
         items: Student[];
+        classCodes?: string[];
         pagination: { page: number; totalPages: number; total: number };
       } = await res.json();
 
       setStudents(data.items);
+      if (Array.isArray(data.classCodes)) {
+        setClassCodes(data.classCodes);
+      }
       setTotalPages(data.pagination.totalPages || 1);
       setPage(data.pagination.page || 1);
     } catch (e) {
@@ -117,7 +155,7 @@ export default function AlunosPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filter, page, selectedDate]);
+  }, [search, filter, classFilter, page, selectedDate]);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -325,7 +363,7 @@ export default function AlunosPage() {
                 Tabela de Alunos
               </p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <div className="w-full sm:w-48">
+                <div className="w-full sm:w-52">
                   <Select
                     inputId="students-status-filter"
                     aria-label="Filtro de status"
@@ -338,33 +376,32 @@ export default function AlunosPage() {
                       setPage(1);
                     }}
                     classNamePrefix="students-filter"
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        minHeight: 44,
-                        height: 44,
-                        borderRadius: 6,
-                        borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
-                        boxShadow: 'none',
-                        '&:hover': { borderColor: '#818cf8' },
-                      }),
-                      valueContainer: (base) => ({
-                        ...base,
-                        height: 44,
-                        paddingInline: 10,
-                        paddingBlock: 0,
-                      }),
-                      indicatorsContainer: (base) => ({ ...base, height: 44 }),
-                      indicatorSeparator: () => ({ display: 'none' }),
-                      dropdownIndicator: (base) => ({ ...base, color: '#64748b' }),
-                      menu: (base) => ({ ...base, zIndex: 20 }),
+                    styles={FILTER_SELECT_STYLES}
+                  />
+                </div>
+                <div className="w-full sm:w-52">
+                  <Select
+                    inputId="students-class-filter"
+                    aria-label="Filtro por turma"
+                    isSearchable={classCodes.length > 8}
+                    placeholder="Turma..."
+                    maxMenuHeight={CLASS_SELECT_MENU_MAX_HEIGHT}
+                    value={classFilterOptions.find((o) => o.value === classFilter) ?? classFilterOptions[0]}
+                    options={classFilterOptions}
+                    onChange={(option) => {
+                      if (!option) return;
+                      setClassFilter(option.value);
+                      setPage(1);
                     }}
+                    classNamePrefix="students-class-filter"
+                    styles={FILTER_SELECT_STYLES}
+                    noOptionsMessage={() => 'Nenhuma turma'}
                   />
                 </div>
                 <div className="relative w-full sm:w-72">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
-                    placeholder="Buscar por nome ou turma..."
+                    placeholder="Buscar por nome..."
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);

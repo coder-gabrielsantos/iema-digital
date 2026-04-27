@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     const Presence = getPresenceModel(platformConn);
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
+    const classCodeFilter = (searchParams.get('classCode') || '').trim();
     const status = searchParams.get('status') || 'all';
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
     const pageSize = Math.min(50, Math.max(5, Number(searchParams.get('pageSize') || '12')));
@@ -23,17 +24,31 @@ export async function GET(req: NextRequest) {
     const selectedDate = normalizeDate(searchParams.get('date')) || today;
     const isToday = selectedDate === today;
 
-    const query: Record<string, unknown> = {};
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { classCode: { $regex: search, $options: 'i' } },
-      ];
+    const conditions: Record<string, unknown>[] = [];
+    if (classCodeFilter) {
+      conditions.push({ classCode: classCodeFilter });
     }
-    const students = await Student.find(query)
-      .select('name classCode photoMime')
-      .sort({ name: 1 })
-      .lean();
+    if (search) {
+      conditions.push({ name: { $regex: search, $options: 'i' } });
+    }
+    const query: Record<string, unknown> =
+      conditions.length === 0
+        ? {}
+        : conditions.length === 1
+          ? conditions[0]
+          : { $and: conditions };
+
+    const [students, rawClassCodes] = await Promise.all([
+      Student.find(query)
+        .select('name classCode photoMime')
+        .sort({ name: 1 })
+        .lean(),
+      Student.distinct('classCode'),
+    ]);
+
+    const classCodes = [...rawClassCodes]
+      .filter((c): c is string => typeof c === 'string' && c.trim().length > 0)
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
     const studentIds = students.map((s) => s._id.toString());
     const presentSet = await getPresentStudentSet(
@@ -69,6 +84,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       items,
+      classCodes,
       summary: {
         total: withPresence.length,
         present: withPresence.filter((student) => student.isPresent).length,
