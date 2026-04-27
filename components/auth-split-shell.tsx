@@ -125,14 +125,14 @@ export default function AuthSplitShell({ mobileSlot, desktopSlot }: AuthSplitShe
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_50%,transparent_0%,rgba(0,0,0,0.5)_100%)]" />
 
           <div className="relative z-10 flex min-h-[100lvh] flex-col px-6 sm:px-8">
-            <div className="flex flex-col items-center gap-3 pt-[max(2.5rem,env(safe-area-inset-top))] sm:pt-[max(3rem,env(safe-area-inset-top))]">
+            <div className="flex flex-col items-center gap-3 pt-[max(3.5rem,env(safe-area-inset-top))] sm:pt-[max(4rem,env(safe-area-inset-top))]">
               <PlatformLogo variant="white" size={72} showIcon={false} />
             </div>
-            <div className="mt-auto w-full max-w-xs self-center pb-[max(1.25rem,env(safe-area-inset-bottom))]">{mobileSlot}</div>
+            <div className="mt-auto w-full max-w-xs self-center pb-[max(2rem,env(safe-area-inset-bottom))]">{mobileSlot}</div>
           </div>
         </section>
 
-        <section className="hidden items-center justify-center bg-white px-6 py-10 sm:px-10 lg:flex">
+        <section className="hidden items-center justify-center bg-white px-6 py-14 sm:px-10 lg:flex">
           <div className="w-full max-w-sm rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.12)]">
             {desktopSlot}
           </div>
