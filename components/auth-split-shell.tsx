@@ -16,10 +16,14 @@ export default function AuthSplitShell({ mobileSlot, desktopSlot }: AuthSplitShe
 
   useEffect(() => {
     const html = document.documentElement;
-    const prev = html.style.backgroundColor;
+    const body = document.body;
+    const prevHtml = html.style.backgroundColor;
+    const prevBody = body.style.backgroundColor;
     html.style.backgroundColor = '#03050a';
+    body.style.backgroundColor = '#03050a';
     return () => {
-      html.style.backgroundColor = prev;
+      html.style.backgroundColor = prevHtml;
+      body.style.backgroundColor = prevBody;
     };
   }, []);
 
@@ -130,6 +134,11 @@ export default function AuthSplitShell({ mobileSlot, desktopSlot }: AuthSplitShe
             </div>
             <div className="mt-auto w-full max-w-xs self-center pb-[max(2rem,env(safe-area-inset-bottom))]">{mobileSlot}</div>
           </div>
+          <div
+            aria-hidden
+            className="pointer-events-none shrink-0 bg-[#03050a] lg:hidden"
+            style={{ height: 'max(0px, calc(100lvh - 100dvh))' }}
+          />
         </section>
 
         <section className="hidden items-center justify-center bg-white px-6 py-14 sm:px-10 lg:flex">
