@@ -5,6 +5,7 @@ import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getMealModel } from '@/lib/models/Meal';
 import { getPresenceModel } from '@/lib/models/Presence';
 import { getLocalFallbackStudents, serializeDbStudent } from '@/lib/local-students';
+import { getEarlyExitMap } from '@/lib/early-exit';
 import { getTodayString } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
@@ -29,8 +30,17 @@ export async function GET(req: NextRequest) {
     Meal.countDocuments({ date: selectedDate }),
     getHourlyAttendance(selectedDate, Attendance),
   ]);
-  const totalStudents =
-    dbStudents.length + getLocalFallbackStudents(dbStudents.map(serializeDbStudent)).length;
+  const dbStudentItems = dbStudents.map(serializeDbStudent);
+  const students = [
+    ...dbStudentItems,
+    ...getLocalFallbackStudents(dbStudentItems),
+  ];
+  const totalStudents = students.length;
+  const earlyExitStudents = await getEarlyExitMap(
+    students.map((student) => student._id.toString()),
+    selectedDate,
+    Attendance
+  );
 
   const presentPercent =
     totalStudents > 0 ? Math.round((presentStudents / totalStudents) * 100) : 0;
@@ -39,6 +49,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     totalStudents,
     presentStudents,
+    earlyExitStudents: earlyExitStudents.size,
     presentPercent,
     todayMeals,
     mealForecast,

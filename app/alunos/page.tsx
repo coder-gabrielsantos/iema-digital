@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { StudentPhoto } from '@/components/ui/student-photo';
+import { formatTime } from '@/lib/utils';
 
 interface Student {
   _id: string;
@@ -26,6 +27,7 @@ interface Student {
   photoMime: string;
   photoData?: string;
   isPresent: boolean;
+  earlyExitTime?: string;
 }
 
 interface StudentDetail extends Student {
@@ -35,17 +37,19 @@ interface StudentDetail extends Student {
 interface DashboardData {
   totalStudents: number;
   presentStudents: number;
+  earlyExitStudents: number;
   presentPercent: number;
   date: string;
   isToday: boolean;
 }
 
-type Filter = 'all' | 'present' | 'absent';
+type Filter = 'all' | 'present' | 'absent' | 'early-exit';
 const PAGE_SIZE = 12;
 const FILTER_OPTIONS: Array<{ value: Filter; label: string }> = [
   { value: 'all', label: 'Todos' },
   { value: 'present', label: 'Presentes' },
   { value: 'absent', label: 'Ausentes' },
+  { value: 'early-exit', label: 'Saídas antecipadas' },
 ];
 
 const FILTER_SELECT_STYLES = {
@@ -211,6 +215,7 @@ export default function AlunosPage() {
   const presentCount = dashboard?.presentStudents ?? 0;
   const totalStudents = dashboard?.totalStudents ?? 0;
   const absentCount = totalStudents - presentCount;
+  const earlyExitCount = dashboard?.earlyExitStudents ?? 0;
   const attendanceRate = dashboard?.presentPercent ?? 0;
   const isSelectedDateToday = selectedDate === todayInputValue;
   const selectedDateObj = parseDateString(selectedDate);
@@ -320,32 +325,26 @@ export default function AlunosPage() {
         <div className="mb-6 grid gap-3 md:grid-cols-4">
           <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-slate-900">{totalStudents}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Total</p>
-            </CardContent>
-          </Card>
-          <Card className="rounded-md shadow-none">
-            <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-emerald-600">{presentCount}</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {isSelectedDateToday ? 'Presentes' : 'Com frequência'}
-              </p>
+              <p className="text-xs text-slate-500 mt-0.5">Presentes</p>
             </CardContent>
           </Card>
           <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-rose-500">{Math.max(absentCount, 0)}</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {isSelectedDateToday ? 'Ausentes' : 'Sem frequência'}
-              </p>
+              <p className="text-xs text-slate-500 mt-0.5">Ausentes</p>
+            </CardContent>
+          </Card>
+          <Card className="rounded-md shadow-none">
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-amber-600">{earlyExitCount}</p>
+              <p className="text-xs text-slate-500 mt-0.5">Saídas antecipadas</p>
             </CardContent>
           </Card>
           <Card className="rounded-md shadow-none">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-violet-600">{attendanceRate}%</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {isSelectedDateToday ? 'Taxa de Presença' : 'Taxa de Frequência'}
-              </p>
+              <p className="text-xs text-slate-500 mt-0.5">Taxa de presença</p>
             </CardContent>
           </Card>
         </div>
@@ -363,7 +362,7 @@ export default function AlunosPage() {
                 Tabela de Alunos
               </p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <div className="w-full sm:w-52">
+                <div className="w-full sm:w-64">
                   <Select
                     inputId="students-status-filter"
                     aria-label="Filtro de status"
@@ -379,7 +378,7 @@ export default function AlunosPage() {
                     styles={FILTER_SELECT_STYLES}
                   />
                 </div>
-                <div className="w-full sm:w-52">
+                <div className="w-full sm:w-64">
                   <Select
                     inputId="students-class-filter"
                     aria-label="Filtro por turma"
@@ -461,7 +460,11 @@ export default function AlunosPage() {
                       </div>
                     </div>
                     <div className="justify-self-start md:justify-self-end">
-                      {student.isPresent ? (
+                      {student.earlyExitTime ? (
+                        <Badge variant="warning" className="w-fit">
+                          Saída antecipada às {formatTime(student.earlyExitTime)}
+                        </Badge>
+                      ) : student.isPresent ? (
                         <Badge variant="success" className="w-fit">
                           {isSelectedDateToday ? 'Presente' : 'Com frequência'}
                         </Badge>

@@ -8,6 +8,7 @@ import {
   mergeClassCodes,
   serializeDbStudent,
 } from '@/lib/local-students';
+import { getEarlyExitMap } from '@/lib/early-exit';
 import { getTodayString } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
@@ -65,19 +66,24 @@ export async function GET(req: NextRequest) {
     ].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
     const studentIds = students.map((s) => s._id.toString());
-    const presentSet = await getPresentStudentSet(
-      studentIds,
-      selectedDate,
-      isToday,
-      Presence,
-      Attendance
-    );
+    const [presentSet, earlyExitMap] = await Promise.all([
+      getPresentStudentSet(studentIds, selectedDate, isToday, Presence, Attendance),
+      getEarlyExitMap(studentIds, selectedDate, Attendance),
+    ]);
 
-    const withPresence = students.map((s) => ({ ...s, isPresent: presentSet.has(s._id.toString()) }));
+    const withPresence = students.map((s) => {
+      const studentId = s._id.toString();
+      return {
+        ...s,
+        isPresent: presentSet.has(studentId),
+        earlyExitTime: earlyExitMap.get(studentId),
+      };
+    });
 
     const filtered = withPresence.filter((student) => {
       if (status === 'present') return student.isPresent;
       if (status === 'absent') return !student.isPresent;
+      if (status === 'early-exit') return Boolean(student.earlyExitTime);
       return true;
     });
 
@@ -107,6 +113,7 @@ export async function GET(req: NextRequest) {
         total: withPresence.length,
         present: withPresence.filter((student) => student.isPresent).length,
         absent: withPresence.filter((student) => !student.isPresent).length,
+        earlyExit: withPresence.filter((student) => student.earlyExitTime).length,
         date: selectedDate,
         isToday,
       },
