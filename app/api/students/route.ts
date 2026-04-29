@@ -3,6 +3,7 @@ import { connectPlatformDB, connectStudentsDB } from '@/lib/mongodb-connections'
 import { getStudentModel } from '@/lib/models/Student';
 import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getPresenceModel } from '@/lib/models/Presence';
+import { getAbsenceJustificationModel } from '@/lib/models/AbsenceJustification';
 import {
   getLocalFallbackStudents,
   mergeClassCodes,
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     const Student = getStudentModel(studentsConn);
     const Attendance = getAttendanceModel(platformConn);
     const Presence = getPresenceModel(platformConn);
+    const AbsenceJustification = getAbsenceJustificationModel(platformConn);
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const classCodeFilter = (searchParams.get('classCode') || '').trim();
@@ -95,15 +97,27 @@ export async function GET(req: NextRequest) {
     const pageDbIds = pageItems
       .filter((student) => !student.isLocalFallback)
       .map((student) => student._id);
-    const pagePhotos = await Student.find({ _id: { $in: pageDbIds } })
-      .select('_id photoData')
-      .lean();
+    const [pagePhotos, absenceJustifications] = await Promise.all([
+      Student.find({ _id: { $in: pageDbIds } })
+        .select('_id photoData')
+        .lean(),
+      AbsenceJustification.find({
+        studentId: { $in: pageItems.map((student) => student._id.toString()) },
+        date: selectedDate,
+      })
+        .select('studentId justification')
+        .lean(),
+    ]);
     const photoMap = new Map(pagePhotos.map((student) => [student._id.toString(), student.photoData]));
+    const justificationMap = new Map(
+      absenceJustifications.map((item) => [item.studentId, item.justification])
+    );
     const items = pageItems.map((student) => ({
       ...student,
       photoData: student.isLocalFallback
         ? student.photoData
         : photoMap.get(student._id.toString()) || '',
+      absenceJustification: justificationMap.get(student._id.toString()) || '',
     }));
 
     return NextResponse.json({
