@@ -213,8 +213,8 @@ export function Navbar({ role }: NavbarProps) {
         }
 
         @page {
-          size: A4;
-          margin: 10mm;
+          size: 100mm 150mm;
+          margin: 4mm;
         }
 
         @media print {
@@ -230,58 +230,60 @@ export function Navbar({ role }: NavbarProps) {
 
           #student-cards-print-root {
             display: block !important;
-            width: 190mm;
-            margin: 0 auto;
+            width: 92mm;
+            margin: 0;
             color: #111827;
           }
 
           .student-cards-print-grid {
             display: grid;
-            grid-template-columns: repeat(3, 58mm);
-            gap: 4mm;
+            grid-template-columns: repeat(2, 45mm);
+            grid-auto-rows: 69mm;
+            gap: 2mm;
             justify-content: center;
           }
 
           .student-card-print-item {
             display: flex;
-            width: 58mm;
-            height: 65mm;
+            width: 45mm;
+            height: 69mm;
             break-inside: avoid;
             page-break-inside: avoid;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             border: 0.35mm solid #111827;
-            border-radius: 2mm;
-            padding: 3mm;
+            border-radius: 1.2mm;
+            padding: 2.5mm;
             background: #ffffff;
+            box-sizing: border-box;
           }
 
           .student-card-print-name {
             display: -webkit-box;
-            min-height: 10mm;
-            max-height: 10mm;
+            min-height: 9mm;
+            max-height: 9mm;
             margin: 0 0 2mm;
             overflow: hidden;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
             text-align: center;
-            font-size: 8.5pt;
+            font-size: 7pt;
             font-weight: 700;
             line-height: 1.15;
           }
 
           .student-card-print-qr {
             display: flex;
-            width: 43mm;
-            height: 43mm;
+            width: 33mm;
+            height: 33mm;
             align-items: center;
             justify-content: center;
           }
 
           .student-card-print-qr svg {
-            width: 42mm;
-            height: 42mm;
+            width: 32mm;
+            height: 32mm;
           }
         }
       `}</style>
