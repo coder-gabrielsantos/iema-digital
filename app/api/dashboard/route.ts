@@ -4,6 +4,7 @@ import { getStudentModel } from '@/lib/models/Student';
 import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getMealModel } from '@/lib/models/Meal';
 import { getPresenceModel } from '@/lib/models/Presence';
+import { getLocalFallbackStudents, serializeDbStudent } from '@/lib/local-students';
 import { getTodayString } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
@@ -20,12 +21,16 @@ export async function GET(req: NextRequest) {
   const selectedDate = normalizeDate(searchParams.get('date')) || today;
   const isToday = selectedDate === today;
 
-  const [totalStudents, presentStudents, todayMeals, hourlyData] = await Promise.all([
-    Student.countDocuments(),
+  const [dbStudents, presentStudents, todayMeals, hourlyData] = await Promise.all([
+    Student.find({})
+      .select('name classCode')
+      .lean(),
     getPresentStudentsCount(selectedDate, isToday, Presence, Attendance),
     Meal.countDocuments({ date: selectedDate }),
     getHourlyAttendance(selectedDate, Attendance),
   ]);
+  const totalStudents =
+    dbStudents.length + getLocalFallbackStudents(dbStudents.map(serializeDbStudent)).length;
 
   const presentPercent =
     totalStudents > 0 ? Math.round((presentStudents / totalStudents) * 100) : 0;

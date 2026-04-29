@@ -1,19 +1,27 @@
 import { NextResponse } from 'next/server';
 import { connectStudentsDB } from '@/lib/mongodb-connections';
 import { getStudentModel } from '@/lib/models/Student';
+import { getLocalFallbackStudents, serializeDbStudent } from '@/lib/local-students';
 
 export async function GET() {
   try {
     const studentsConn = await connectStudentsDB();
     const Student = getStudentModel(studentsConn);
-    const students = await Student.find({})
+    const dbStudents = await Student.find({})
       .select('name classCode')
       .sort({ classCode: 1, name: 1 })
       .lean();
+    const students = [
+      ...dbStudents.map(serializeDbStudent),
+      ...getLocalFallbackStudents(dbStudents.map(serializeDbStudent)),
+    ].sort((a, b) => {
+      const classCompare = a.classCode.localeCompare(b.classCode, 'pt-BR');
+      return classCompare || a.name.localeCompare(b.name, 'pt-BR');
+    });
 
     return NextResponse.json({
       items: students.map((student) => ({
-        _id: student._id.toString(),
+        _id: student._id,
         name: student.name,
         classCode: student.classCode,
       })),

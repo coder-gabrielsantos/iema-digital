@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { connectPlatformDB, connectStudentsDB } from '@/lib/mongodb-connections';
 import { getStudentModel } from '@/lib/models/Student';
 import { getMealModel } from '@/lib/models/Meal';
+import { resolveStudent } from '@/lib/local-students';
 import { getTodayString } from '@/lib/utils';
 
 type MealPeriod = 'morning' | 'lunch' | 'afternoon';
@@ -81,46 +82,31 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let student = null;
+  const resolution = await resolveStudent(
+    Student,
+    hasStudentId ? { studentId: studentId.trim() } : { studentName: studentName.trim() }
+  );
 
-  if (hasStudentId) {
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return NextResponse.json({ error: 'ID do aluno inválido' }, { status: 400 });
-    }
-    student = await Student.findById(studentId);
-  } else {
-    const normalizedName = studentName.trim();
-    const escapedName = normalizedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const exactMatches = await Student.find({
-      name: { $regex: `^${escapedName}$`, $options: 'i' },
-    })
-      .sort({ createdAt: -1 })
-      .limit(2);
-
-    if (exactMatches.length > 1) {
-      return NextResponse.json(
-        { error: 'Mais de um aluno encontrado com esse nome. Seja mais específico.' },
-        { status: 409 }
-      );
-    }
-
-    if (exactMatches.length === 1) {
-      student = exactMatches[0];
-    } else {
-      student = await Student.findOne({
-        name: { $regex: escapedName, $options: 'i' },
-      }).sort({ createdAt: -1 });
-    }
+  if (resolution.status === 'invalid-id') {
+    return NextResponse.json({ error: 'ID do aluno inválido' }, { status: 400 });
   }
 
-  if (!student) {
+  if (resolution.status === 'ambiguous') {
+    return NextResponse.json(
+      { error: 'Mais de um aluno encontrado com esse nome. Seja mais específico.' },
+      { status: 409 }
+    );
+  }
+
+  if (resolution.status !== 'found') {
     return NextResponse.json({ error: 'Aluno não encontrado' }, { status: 404 });
   }
 
+  const student = resolution.student;
   const today = getTodayString();
   const mealPeriod = getCurrentMealPeriod();
   const existingMeal = await Meal.findOne({
-    studentId: student._id.toString(),
+    studentId: student._id,
     date: today,
     mealPeriod,
   });

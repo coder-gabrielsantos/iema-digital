@@ -32,22 +32,21 @@ export function getTodayString(): string {
 }
 
 const MONGODB_OBJECT_ID_PATTERN = /\b[a-fA-F0-9]{24}\b/;
+const LOCAL_STUDENT_ID_PATTERN = /\blocal-student-[a-fA-F0-9]{16}\b/;
 
 export function parseStudentIdFromQr(rawValue: string): string | null {
   const trimmedValue = rawValue.trim();
   if (!trimmedValue) return null;
 
-  if (MONGODB_OBJECT_ID_PATTERN.test(trimmedValue)) {
-    return trimmedValue.match(MONGODB_OBJECT_ID_PATTERN)?.[0] ?? null;
-  }
+  const directId = extractStudentId(trimmedValue);
+  if (directId) return directId;
 
   try {
     const parsedUrl = new URL(trimmedValue);
     const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
     for (const segment of pathSegments) {
-      if (MONGODB_OBJECT_ID_PATTERN.test(segment)) {
-        return segment.match(MONGODB_OBJECT_ID_PATTERN)?.[0] ?? null;
-      }
+      const segmentId = extractStudentId(segment);
+      if (segmentId) return segmentId;
     }
   } catch {
     // Value is not an URL, continue with other parsing strategies.
@@ -57,14 +56,21 @@ export function parseStudentIdFromQr(rawValue: string): string | null {
     const json = JSON.parse(trimmedValue) as Record<string, unknown>;
     const candidates = [json.studentId, json._id, json.id];
     for (const candidate of candidates) {
-      if (typeof candidate === 'string' && MONGODB_OBJECT_ID_PATTERN.test(candidate.trim())) {
-        return candidate.trim().match(MONGODB_OBJECT_ID_PATTERN)?.[0] ?? null;
-      }
+      if (typeof candidate !== 'string') continue;
+      const candidateId = extractStudentId(candidate.trim());
+      if (candidateId) return candidateId;
     }
   } catch {
     // Value is not JSON, continue with regex fallback.
   }
 
-  const fallbackMatch = trimmedValue.match(MONGODB_OBJECT_ID_PATTERN);
-  return fallbackMatch?.[0] ?? null;
+  return extractStudentId(trimmedValue);
+}
+
+function extractStudentId(value: string): string | null {
+  return (
+    value.match(MONGODB_OBJECT_ID_PATTERN)?.[0] ??
+    value.match(LOCAL_STUDENT_ID_PATTERN)?.[0] ??
+    null
+  );
 }

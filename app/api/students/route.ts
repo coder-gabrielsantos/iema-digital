@@ -3,6 +3,11 @@ import { connectPlatformDB, connectStudentsDB } from '@/lib/mongodb-connections'
 import { getStudentModel } from '@/lib/models/Student';
 import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getPresenceModel } from '@/lib/models/Presence';
+import {
+  getLocalFallbackStudents,
+  mergeClassCodes,
+  serializeDbStudent,
+} from '@/lib/local-students';
 import { getTodayString } from '@/lib/utils';
 
 export async function GET(req: NextRequest) {
@@ -38,17 +43,26 @@ export async function GET(req: NextRequest) {
           ? conditions[0]
           : { $and: conditions };
 
-    const [students, rawClassCodes] = await Promise.all([
+    const [dbStudents, allDbStudents, rawClassCodes] = await Promise.all([
       Student.find(query)
         .select('name classCode photoMime')
         .sort({ name: 1 })
         .lean(),
+      Student.find({})
+        .select('name classCode')
+        .lean(),
       Student.distinct('classCode'),
     ]);
 
-    const classCodes = [...rawClassCodes]
-      .filter((c): c is string => typeof c === 'string' && c.trim().length > 0)
-      .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const classCodes = mergeClassCodes(rawClassCodes);
+    const localStudents = getLocalFallbackStudents(
+      allDbStudents.map(serializeDbStudent),
+      { search, classCode: classCodeFilter }
+    );
+    const students = [
+      ...dbStudents.map(serializeDbStudent),
+      ...localStudents,
+    ].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
     const studentIds = students.map((s) => s._id.toString());
     const presentSet = await getPresentStudentSet(
@@ -72,14 +86,18 @@ export async function GET(req: NextRequest) {
     const safePage = Math.min(page, totalPages);
     const start = (safePage - 1) * pageSize;
     const pageItems = filtered.slice(start, start + pageSize);
-    const pageIds = pageItems.map((student) => student._id);
-    const pagePhotos = await Student.find({ _id: { $in: pageIds } })
+    const pageDbIds = pageItems
+      .filter((student) => !student.isLocalFallback)
+      .map((student) => student._id);
+    const pagePhotos = await Student.find({ _id: { $in: pageDbIds } })
       .select('_id photoData')
       .lean();
     const photoMap = new Map(pagePhotos.map((student) => [student._id.toString(), student.photoData]));
     const items = pageItems.map((student) => ({
       ...student,
-      photoData: photoMap.get(student._id.toString()) || '',
+      photoData: student.isLocalFallback
+        ? student.photoData
+        : photoMap.get(student._id.toString()) || '',
     }));
 
     return NextResponse.json({
