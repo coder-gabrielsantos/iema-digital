@@ -27,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
 interface StudentCard {
   _id: string;
   name: string;
+  classCode: string;
 }
 
 interface NavbarProps {
@@ -200,6 +201,7 @@ export function Navbar({ role }: NavbarProps) {
           {cardStudents.map((student) => (
             <article key={student._id} className="student-card-print-item">
               <p className="student-card-print-name">{student.name}</p>
+              <p className="student-card-print-class">Turma {student.classCode}</p>
               <div className="student-card-print-qr">
                 <QRCodeSVG value={student._id} size={160} level="H" marginSize={1} />
               </div>
@@ -261,16 +263,25 @@ export function Navbar({ role }: NavbarProps) {
 
           .student-card-print-name {
             display: -webkit-box;
-            min-height: 9mm;
-            max-height: 9mm;
-            margin: 0 0 2mm;
+            min-height: 7.5mm;
+            max-height: 7.5mm;
+            margin: 0 0 1.2mm;
             overflow: hidden;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
             text-align: center;
-            font-size: 7pt;
+            font-size: 6.8pt;
             font-weight: 700;
             line-height: 1.15;
+          }
+
+          .student-card-print-class {
+            margin: 0 0 2mm;
+            text-align: center;
+            font-size: 6pt;
+            font-weight: 600;
+            line-height: 1.1;
+            color: #475569;
           }
 
           .student-card-print-qr {
