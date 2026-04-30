@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { CheckCircle2, XCircle, Keyboard, QrCode, RefreshCw } from 'lucide-react';
+import { CheckCircle2, X, XCircle, Keyboard, QrCode, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import Select from 'react-select';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,23 @@ interface MealResult {
   mealPeriod?: 'morning' | 'lunch' | 'afternoon';
 }
 
+interface MealEntry {
+  _id: string;
+  studentId: string;
+  studentName: string;
+  classCode: string;
+  timestamp: string;
+  date: string;
+  mealPeriod: 'morning' | 'lunch' | 'afternoon';
+}
+
+interface MealStudentDetail {
+  name: string;
+  classCode: string;
+  photoMime: string;
+  photoData: string;
+}
+
 type ScanStatus = 'idle' | 'scanning' | 'success' | 'duplicate' | 'error';
 const PERIOD_LABEL: Record<'morning' | 'lunch' | 'afternoon', string> = {
   morning: 'manhã',
@@ -39,11 +57,39 @@ const PERIOD_LABEL: Record<'morning' | 'lunch' | 'afternoon', string> = {
   afternoon: 'tarde',
 };
 
+const FILTER_SELECT_STYLES = {
+  control: (base: object, state: { isFocused?: boolean }) => ({
+    ...base,
+    minHeight: 36,
+    height: 36,
+    borderRadius: 6,
+    borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
+    boxShadow: 'none',
+    '&:hover': { borderColor: '#818cf8' },
+  }),
+  valueContainer: (base: object) => ({
+    ...base,
+    height: 36,
+    paddingInline: 8,
+    paddingBlock: 0,
+  }),
+  indicatorsContainer: (base: object) => ({ ...base, height: 36 }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
+  menu: (base: object) => ({ ...base, zIndex: 30 }),
+};
+
 export default function CantinaPage() {
   const [presentCount, setPresentCount] = useState(0);
   const [todayMeals, setTodayMeals] = useState(0);
+  const [todayMealsList, setTodayMealsList] = useState<MealEntry[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [refreshSpinning, setRefreshSpinning] = useState(true);
+  const [isMealsModalOpen, setIsMealsModalOpen] = useState(false);
+  const [mealsClassFilter, setMealsClassFilter] = useState('');
+  const [selectedMealStudent, setSelectedMealStudent] = useState<MealStudentDetail | null>(null);
+  const [loadingMealStudent, setLoadingMealStudent] = useState(false);
+  const [mealStudentError, setMealStudentError] = useState('');
 
   const [scannerActive, setScannerActive] = useState(false);
   const [manualName, setManualName] = useState('');
@@ -66,7 +112,13 @@ export default function CantinaPage() {
       ]);
       const [dash, meals] = await Promise.all([dashRes.json(), mealsRes.json()]);
       setPresentCount(dash.presentStudents || 0);
-      setTodayMeals(Array.isArray(meals) ? meals.length : 0);
+      if (Array.isArray(meals)) {
+        setTodayMeals(meals.length);
+        setTodayMealsList(meals);
+      } else {
+        setTodayMeals(0);
+        setTodayMealsList([]);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -199,6 +251,41 @@ export default function CantinaPage() {
     setManualName('');
   };
 
+  const mealClassOptions = [
+    { value: '', label: 'Todas as turmas' },
+    ...Array.from(new Set(todayMealsList.map((meal) => meal.classCode).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .map((classCode) => ({ value: classCode, label: classCode })),
+  ];
+
+  const filteredMeals = (mealsClassFilter
+    ? todayMealsList.filter((meal) => meal.classCode === mealsClassFilter)
+    : todayMealsList
+  ).slice().sort((a, b) => a.studentName.localeCompare(b.studentName, 'pt-BR'));
+
+  const openMealStudent = useCallback(async (meal: MealEntry) => {
+    setLoadingMealStudent(true);
+    setMealStudentError('');
+    try {
+      const res = await fetch(`/api/students/${meal.studentId}`);
+      if (!res.ok) {
+        throw new Error('Não foi possível carregar os dados do aluno');
+      }
+      const student: MealStudentDetail = await res.json();
+      setSelectedMealStudent(student);
+    } catch {
+      setSelectedMealStudent({
+        name: meal.studentName,
+        classCode: meal.classCode,
+        photoData: '',
+        photoMime: '',
+      });
+      setMealStudentError('Não foi possível carregar a foto do aluno.');
+    } finally {
+      setLoadingMealStudent(false);
+    }
+  }, []);
+
   return (
     <ProtectedLayout requiredRole={['admin', 'cantina']}>
       <div className="min-h-[calc(100vh-4rem)] bg-white">
@@ -232,8 +319,20 @@ export default function CantinaPage() {
               <p className="mt-0.5 text-xs text-slate-500">Alunos no instituto</p>
             </CardContent>
           </Card>
-          <Card className="rounded-md shadow-none">
-            <CardContent className="p-4 text-center">
+          <Card className="overflow-hidden rounded-md shadow-none">
+            <CardContent
+              role="button"
+              tabIndex={0}
+              onClick={() => setIsMealsModalOpen(true)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setIsMealsModalOpen(true);
+                }
+              }}
+              className="cursor-pointer p-4 text-center transition-colors hover:bg-slate-50"
+              aria-label="Abrir lista de refeições de hoje"
+            >
               {loadingStats ? (
                 <div className="mx-auto h-7 w-12 animate-pulse rounded bg-slate-200" />
               ) : (
@@ -385,6 +484,121 @@ export default function CantinaPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {isMealsModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setIsMealsModalOpen(false)}
+          >
+            <div
+              className="app-panel w-full max-w-xl rounded-md p-6 shadow-none"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Refeições registradas
+                  </p>
+                  <h3 className="mt-1 text-xl font-bold text-slate-900">Refeições de hoje</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMealsModalOpen(false)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                  aria-label="Fechar modal"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mb-4 flex justify-end">
+                <div className="w-full sm:w-52">
+                  <Select
+                    inputId="meals-class-filter"
+                    aria-label="Filtro por turma"
+                    isSearchable={false}
+                    value={mealClassOptions.find((option) => option.value === mealsClassFilter)}
+                    options={mealClassOptions}
+                    onChange={(option) => setMealsClassFilter(option?.value ?? '')}
+                    classNamePrefix="meals-class-filter"
+                    styles={FILTER_SELECT_STYLES}
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-[55vh] overflow-y-auto border border-slate-100">
+                {filteredMeals.length === 0 ? (
+                  <p className="p-4 text-sm text-slate-500">
+                    Nenhuma refeição encontrada para o filtro selecionado.
+                  </p>
+                ) : (
+                  filteredMeals.map((meal) => (
+                    <button
+                      type="button"
+                      key={meal._id}
+                      onClick={() => void openMealStudent(meal)}
+                      className="grid w-full grid-cols-[minmax(0,1fr)_4rem] items-center gap-3 border-b border-slate-100 px-4 py-3 text-left text-sm transition-colors hover:bg-slate-50 last:border-b-0"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900">{meal.studentName}</p>
+                        <p className="truncate text-xs text-slate-500">Turma {meal.classCode}</p>
+                      </div>
+                      <Badge variant="secondary" className="w-16 justify-center">
+                        {formatTime(meal.timestamp)}
+                      </Badge>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(selectedMealStudent || loadingMealStudent) && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+            onClick={() => {
+              if (loadingMealStudent) return;
+              setSelectedMealStudent(null);
+              setMealStudentError('');
+            }}
+          >
+            <div
+              className="app-panel w-full max-w-sm rounded-md p-6 text-center shadow-none"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {loadingMealStudent ? (
+                <p className="text-sm text-slate-500">Carregando aluno...</p>
+              ) : selectedMealStudent ? (
+                <>
+                  <StudentPhoto
+                    name={selectedMealStudent.name}
+                    photoData={selectedMealStudent.photoData}
+                    photoMime={selectedMealStudent.photoMime}
+                    size="xl"
+                    lazy={false}
+                    className="mx-auto mb-4 ring-2 ring-slate-100"
+                  />
+                  <p className="text-lg font-semibold text-slate-900">{selectedMealStudent.name}</p>
+                  <p className="text-sm text-slate-500">Turma {selectedMealStudent.classCode}</p>
+                  {mealStudentError ? (
+                    <p className="mt-3 text-xs text-amber-600">{mealStudentError}</p>
+                  ) : null}
+                  <Button
+                    variant="outline"
+                    className="mt-5 w-full"
+                    onClick={() => {
+                      setSelectedMealStudent(null);
+                      setMealStudentError('');
+                    }}
+                  >
+                    Fechar
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </div>
         )}
 
         </div>
