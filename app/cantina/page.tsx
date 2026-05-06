@@ -50,7 +50,7 @@ interface MealStudentDetail {
   photoData: string;
 }
 
-type ScanStatus = 'idle' | 'scanning' | 'success' | 'duplicate' | 'error';
+type ValidationStatus = 'pending' | 'success' | 'duplicate' | 'error';
 interface StudentOption {
   value: string;
   label: string;
@@ -61,11 +61,19 @@ interface FilterOption {
   label: string;
 }
 
+interface ValidationCard {
+  id: string;
+  status: ValidationStatus;
+  student?: StudentInfo;
+  errorMsg?: string;
+}
+
 const PERIOD_LABEL: Record<'morning' | 'lunch' | 'afternoon', string> = {
   morning: 'manhã',
   lunch: 'almoço',
   afternoon: 'tarde',
 };
+const VALIDATION_CARD_TTL_MS = 5000;
 
 const FILTER_SELECT_STYLES: StylesConfig<FilterOption, false> = {
   control: (base, state) => ({
@@ -132,13 +140,11 @@ export default function CantinaPage() {
   const [scannerActive, setScannerActive] = useState(false);
   const [manualStudentId, setManualStudentId] = useState('');
   const [selectedManualStudent, setSelectedManualStudent] = useState<StudentOption | null>(null);
-  const [status, setStatus] = useState<ScanStatus>('idle');
-  const [result, setResult] = useState<MealResult | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [validationCards, setValidationCards] = useState<ValidationCard[]>([]);
   const [scanFeedbackToken, setScanFeedbackToken] = useState(0);
   const [inputMode, setInputMode] = useState<'camera' | 'manual'>('camera');
   const processingRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const refreshSpinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshSpinStartedAtRef = useRef(Date.now());
 
@@ -212,10 +218,13 @@ export default function CantinaPage() {
     async (value: string, mode: 'id' | 'name') => {
       if (processingRef.current || !value.trim()) return;
       processingRef.current = true;
-
-      setStatus('scanning');
-      setResult(null);
-      setErrorMsg('');
+      setIsProcessing(true);
+      const validationId = `${mode}-${value.trim()}-${Date.now()}`;
+      const pendingCard: ValidationCard = { id: validationId, status: 'pending' };
+      setValidationCards((prev) => [pendingCard, ...prev].slice(0, 8));
+      setTimeout(() => {
+        setValidationCards((prev) => prev.filter((card) => card.id !== validationId));
+      }, VALIDATION_CARD_TTL_MS);
 
       try {
         const res = await fetch('/api/meals', {
@@ -231,39 +240,59 @@ export default function CantinaPage() {
         const data = await res.json();
 
         if (res.status === 409 && data.alreadyServed) {
-          setStatus('duplicate');
-          setResult({
-            success: false,
-            alreadyServed: true,
-            mealPeriod: data.mealPeriod,
-            student: data.student,
-            timestamp: new Date(),
-          });
+          setValidationCards((prev) =>
+            prev.map((card) =>
+              card.id === validationId
+                ? {
+                    ...card,
+                    status: 'duplicate',
+                    student: data.student,
+                  }
+                : card
+            )
+          );
           fetchStats();
         } else if (!res.ok) {
-          setStatus('error');
-          setErrorMsg(data.error || 'Erro ao processar');
+          setValidationCards((prev) =>
+            prev.map((card) =>
+              card.id === validationId
+                ? {
+                    ...card,
+                    status: 'error',
+                    errorMsg: data.error || 'Erro ao processar',
+                  }
+                : card
+            )
+          );
         } else {
-          setStatus('success');
-          setResult({
-            success: true,
-            mealPeriod: data.mealPeriod,
-            student: data.student,
-            timestamp: new Date(),
-          });
+          setValidationCards((prev) =>
+            prev.map((card) =>
+              card.id === validationId
+                ? {
+                    ...card,
+                    status: 'success',
+                    student: data.student,
+                  }
+                : card
+            )
+          );
           fetchStats();
         }
       } catch {
-        setStatus('error');
-        setErrorMsg('Erro de conexão');
+        setValidationCards((prev) =>
+          prev.map((card) =>
+            card.id === validationId
+              ? {
+                  ...card,
+                  status: 'error',
+                  errorMsg: 'Erro de conexão',
+                }
+              : card
+          )
+        );
       } finally {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          setStatus('idle');
-          setResult(null);
-          setErrorMsg('');
-          processingRef.current = false;
-        }, 5000);
+        processingRef.current = false;
+        setIsProcessing(false);
       }
     },
     [fetchStats]
@@ -274,9 +303,18 @@ export default function CantinaPage() {
       setScanFeedbackToken((prev) => prev + 1);
       const studentId = parseStudentIdFromQr(data);
       if (!studentId) {
-        setStatus('error');
-        setResult(null);
-        setErrorMsg('QR Code inválido para aluno');
+        const validationId = `qr-invalid-${Date.now()}`;
+        const invalidQrCard: ValidationCard = {
+          id: validationId,
+          status: 'error',
+          errorMsg: 'QR Code inválido para aluno',
+        };
+        setValidationCards((prev) =>
+          [invalidQrCard, ...prev].slice(0, 8)
+        );
+        setTimeout(() => {
+          setValidationCards((prev) => prev.filter((card) => card.id !== validationId));
+        }, VALIDATION_CARD_TTL_MS);
         return;
       }
       void processStudentInput(studentId, 'id');
@@ -481,7 +519,7 @@ export default function CantinaPage() {
                 </div>
                 <Button
                   type="submit"
-                  loading={status === 'scanning'}
+                  loading={isProcessing}
                   disabled={!manualStudentId.trim()}
                   className="h-10 rounded-full border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
                 >
@@ -492,74 +530,84 @@ export default function CantinaPage() {
           </Card>
         )}
 
-        {status === 'scanning' && (
-          <Card className="rounded-md border-indigo-200 bg-indigo-50 shadow-none">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent flex-shrink-0" />
-              <p className="font-medium text-indigo-900">Validando...</p>
-            </CardContent>
-          </Card>
-        )}
+        <div className="mt-2 flex flex-col gap-2">
+          {validationCards.map((card) => {
+            if (card.status === 'pending') {
+              return (
+                <Card key={card.id} className="rounded-md border-indigo-200 bg-indigo-50 shadow-none">
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent flex-shrink-0" />
+                    <p className="font-medium text-indigo-900">Validando...</p>
+                  </CardContent>
+                </Card>
+              );
+            }
 
-        {status === 'success' && result && (
-          <Card className="rounded-md border border-emerald-200 bg-emerald-50/60 shadow-none">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3.5">
-                <StudentPhoto
-                  name={result.student.name}
-                  photoData={result.student.photoData}
-                  photoMime={result.student.photoMime}
-                  size="xl"
-                  lazy={false}
-                  className="ring-2 ring-white shadow-sm"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="mb-1 flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
-                    <span className="text-base font-semibold text-emerald-700">Refeição registrada</span>
+            if (card.status === 'success' && card.student) {
+              return (
+                <Card key={card.id} className="rounded-md border border-emerald-200 bg-emerald-50/60 shadow-none">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3.5">
+                      <StudentPhoto
+                        name={card.student.name}
+                        photoData={card.student.photoData}
+                        photoMime={card.student.photoMime}
+                        size="xl"
+                        lazy={false}
+                        className="ring-2 ring-white shadow-sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
+                          <span className="text-base font-semibold text-emerald-700">Refeição registrada</span>
+                        </div>
+                        <p className="truncate text-lg font-medium text-slate-900">{card.student.name}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            if (card.status === 'duplicate' && card.student) {
+              return (
+                <Card key={card.id} className="rounded-md border border-red-200 bg-red-50/60 shadow-none">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3.5">
+                      <StudentPhoto
+                        name={card.student.name}
+                        photoData={card.student.photoData}
+                        photoMime={card.student.photoMime}
+                        size="xl"
+                        lazy={false}
+                        className="ring-2 ring-red-200 shadow-sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <XCircle className="h-4.5 w-4.5 text-red-600" />
+                          <span className="text-base font-semibold text-red-700">Refeição já registrada</span>
+                        </div>
+                        <p className="truncate text-lg font-medium text-slate-900">{card.student.name}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            return (
+              <Card key={card.id} className="rounded-md border-2 border-red-200 bg-red-50 shadow-none">
+                <CardContent className="p-6 flex items-center gap-4">
+                  <XCircle className="h-10 w-10 text-red-500 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-red-700 text-lg">Erro</p>
+                    <p className="text-sm text-red-600">{card.errorMsg || 'Erro ao processar'}</p>
                   </div>
-                  <p className="truncate text-lg font-medium text-slate-900">{result.student.name}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {status === 'duplicate' && result && (
-          <Card className="rounded-md border border-red-200 bg-red-50/60 shadow-none">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-3.5">
-                <StudentPhoto
-                  name={result.student.name}
-                  photoData={result.student.photoData}
-                  photoMime={result.student.photoMime}
-                  size="xl"
-                  lazy={false}
-                  className="ring-2 ring-red-200 shadow-sm"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="mb-1 flex items-center gap-1.5">
-                    <XCircle className="h-4.5 w-4.5 text-red-600" />
-                    <span className="text-base font-semibold text-red-700">Refeição já registrada</span>
-                  </div>
-                  <p className="truncate text-lg font-medium text-slate-900">{result.student.name}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {status === 'error' && (
-          <Card className="rounded-md border-2 border-red-200 bg-red-50 shadow-none">
-            <CardContent className="p-6 flex items-center gap-4">
-              <XCircle className="h-10 w-10 text-red-500 flex-shrink-0" />
-              <div>
-                <p className="font-bold text-red-700 text-lg">Erro</p>
-                <p className="text-sm text-red-600">{errorMsg}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
         {isMealsModalOpen && (
           <div
