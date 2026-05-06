@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { XCircle, LogIn, LogOut, Keyboard, QrCode, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import type { StylesConfig } from 'react-select';
 import AsyncSelect from 'react-select/async';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,8 +28,13 @@ interface ScanToast {
 
 const DEBOUNCE_MS = 3000;
 const TOAST_TTL_MS = 4000;
-const MANUAL_SELECT_STYLES = {
-  control: (base: object, state: { isFocused?: boolean }) => ({
+interface StudentOption {
+  value: string;
+  label: string;
+}
+
+const MANUAL_SELECT_STYLES: StylesConfig<StudentOption, false> = {
+  control: (base, state) => ({
     ...base,
     minHeight: 40,
     borderRadius: 9999,
@@ -36,30 +42,25 @@ const MANUAL_SELECT_STYLES = {
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
   }),
-  valueContainer: (base: object) => ({
+  valueContainer: (base) => ({
     ...base,
     minHeight: 40,
     paddingInline: 12,
     paddingBlock: 0,
   }),
-  indicatorsContainer: (base: object) => ({ ...base, minHeight: 40 }),
+  indicatorsContainer: (base) => ({ ...base, minHeight: 40 }),
   indicatorSeparator: () => ({ display: 'none' }),
-  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
-  menu: (base: object) => ({ ...base, zIndex: 30 }),
-  menuList: (base: object) => ({
+  dropdownIndicator: (base) => ({ ...base, color: '#64748b', padding: 6 }),
+  menu: (base) => ({ ...base, zIndex: 30 }),
+  menuList: (base) => ({
     ...base,
     maxHeight: 164,
     overflowY: 'auto',
     paddingTop: 0,
     paddingBottom: 0,
   }),
-  menuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
 };
-
-interface StudentOption {
-  value: string;
-  label: string;
-}
 
 export default function PortariaPage() {
   const [scannerActive, setScannerActive] = useState(false);

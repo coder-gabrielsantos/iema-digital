@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { CheckCircle2, X, XCircle, Keyboard, QrCode, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import Select from 'react-select';
+import Select, { type StylesConfig } from 'react-select';
 import AsyncSelect from 'react-select/async';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,14 +51,24 @@ interface MealStudentDetail {
 }
 
 type ScanStatus = 'idle' | 'scanning' | 'success' | 'duplicate' | 'error';
+interface StudentOption {
+  value: string;
+  label: string;
+}
+
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
 const PERIOD_LABEL: Record<'morning' | 'lunch' | 'afternoon', string> = {
   morning: 'manhã',
   lunch: 'almoço',
   afternoon: 'tarde',
 };
 
-const FILTER_SELECT_STYLES = {
-  control: (base: object, state: { isFocused?: boolean }) => ({
+const FILTER_SELECT_STYLES: StylesConfig<FilterOption, false> = {
+  control: (base, state) => ({
     ...base,
     minHeight: 36,
     height: 36,
@@ -67,19 +77,19 @@ const FILTER_SELECT_STYLES = {
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
   }),
-  valueContainer: (base: object) => ({
+  valueContainer: (base) => ({
     ...base,
     height: 36,
     paddingInline: 8,
     paddingBlock: 0,
   }),
-  indicatorsContainer: (base: object) => ({ ...base, height: 36 }),
+  indicatorsContainer: (base) => ({ ...base, height: 36 }),
   indicatorSeparator: () => ({ display: 'none' }),
-  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
-  menu: (base: object) => ({ ...base, zIndex: 30 }),
+  dropdownIndicator: (base) => ({ ...base, color: '#64748b', padding: 6 }),
+  menu: (base) => ({ ...base, zIndex: 30 }),
 };
-const MANUAL_SELECT_STYLES = {
-  control: (base: object, state: { isFocused?: boolean }) => ({
+const MANUAL_SELECT_STYLES: StylesConfig<StudentOption, false> = {
+  control: (base, state) => ({
     ...base,
     minHeight: 40,
     borderRadius: 9999,
@@ -87,30 +97,25 @@ const MANUAL_SELECT_STYLES = {
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
   }),
-  valueContainer: (base: object) => ({
+  valueContainer: (base) => ({
     ...base,
     minHeight: 40,
     paddingInline: 12,
     paddingBlock: 0,
   }),
-  indicatorsContainer: (base: object) => ({ ...base, minHeight: 40 }),
+  indicatorsContainer: (base) => ({ ...base, minHeight: 40 }),
   indicatorSeparator: () => ({ display: 'none' }),
-  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
-  menu: (base: object) => ({ ...base, zIndex: 30 }),
-  menuList: (base: object) => ({
+  dropdownIndicator: (base) => ({ ...base, color: '#64748b', padding: 6 }),
+  menu: (base) => ({ ...base, zIndex: 30 }),
+  menuList: (base) => ({
     ...base,
     maxHeight: 164,
     overflowY: 'auto',
     paddingTop: 0,
     paddingBottom: 0,
   }),
-  menuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
 };
-
-interface StudentOption {
-  value: string;
-  label: string;
-}
 
 export default function CantinaPage() {
   const [presentCount, setPresentCount] = useState(0);
