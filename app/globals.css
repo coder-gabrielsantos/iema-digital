@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --font-sans: "Google Sans", "Product Sans", var(--font-sans-main), "Segoe UI", Arial, sans-serif;
+  --font-sans: var(--font-sans-main), "Segoe UI", Arial, sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
   --font-display: var(--font-sans-main);
 

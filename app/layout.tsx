@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { Outfit, Inter } from 'next/font/google';
+import { Outfit, Nunito } from 'next/font/google';
 import { BrowserRejectionGuard } from '@/components/global/browser-rejection-guard';
 import './globals.css';
 
-const sansFont = Inter({
+const sansFont = Nunito({
   subsets: ['latin'],
   variable: '--font-sans-main',
   display: 'swap',

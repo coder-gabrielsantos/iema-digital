@@ -481,9 +481,9 @@ export default function AlunosPage() {
           </div>
         ) : null}
 
-        <Card className="rounded-md shadow-none">
+        <Card className="!rounded-none border-slate-200">
           <CardContent className="p-0">
-            <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Tabela de Alunos
               </p>
@@ -532,15 +532,15 @@ export default function AlunosPage() {
                       setSearch(e.target.value);
                       setPage(1);
                     }}
-                    className="h-11 w-full rounded-md pl-9"
+                    className="h-11 w-full rounded-none pl-9"
                   />
                 </div>
               </div>
             </div>
             {loading ? (
-              <div>
+              <div className="divide-y divide-slate-300">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 last:border-0">
+                  <div key={i} className="flex items-center gap-4 px-6 py-4">
                     <div className="h-10 w-10 rounded-full bg-slate-200 animate-pulse" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 w-48 bg-slate-200 rounded animate-pulse" />
@@ -555,22 +555,22 @@ export default function AlunosPage() {
                 <p className="text-sm mt-1">Ajuste os filtros ou tente outra busca</p>
               </div>
             ) : (
-              <div>
-                <div className="hidden md:grid grid-cols-[1fr_auto] gap-4 px-6 py-3 border-b border-slate-100 text-xs font-medium text-slate-400 uppercase tracking-wide">
+              <div className="divide-y divide-slate-300">
+                <div className="hidden md:grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 px-6 py-3 text-xs font-medium uppercase tracking-wide text-slate-400">
                   <span>Aluno</span>
                   <span>Status / Ação</span>
                 </div>
                 {visibleStudents.map((student) => (
                   <div
                     key={student._id}
-                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-x-0 border-t-0 border-b border-slate-100 bg-white px-4 py-3 last:border-b-0 hover:bg-slate-50 sm:px-6 sm:py-4 md:grid-cols-[1fr_auto] md:gap-4"
+                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-white px-4 py-3 hover:bg-slate-50 sm:px-6 sm:py-4 md:grid-cols-[1fr_auto] md:gap-4"
                   >
                     <button
                       type="button"
                       disabled={loadingQr}
                       aria-label={`Ver QR Code de ${student.name}`}
                       onClick={() => void openQr(student)}
-                      className="flex min-w-0 items-center gap-3 rounded-md text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:cursor-wait disabled:opacity-60"
+                      className="flex min-w-0 items-center gap-3 rounded-none text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:cursor-wait disabled:opacity-60"
                     >
                       <StudentPhoto
                         name={student.name}
@@ -613,7 +613,7 @@ export default function AlunosPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-4 flex flex-col gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-600">
             Exibindo página {page} de {totalPages}
           </p>
