@@ -436,6 +436,7 @@ export default function CantinaPage() {
                 active={scannerActive}
                 feedbackToken={scanFeedbackToken}
                 onRequestStart={() => setScannerActive(true)}
+                feedbackVariant="loading"
               />
             </div>
           </div>

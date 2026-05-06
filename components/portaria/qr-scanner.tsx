@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CameraOff, Check, Play } from 'lucide-react';
+import { CameraOff, Check, Loader2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface QrScannerProps {
@@ -9,9 +9,16 @@ interface QrScannerProps {
   active: boolean;
   feedbackToken?: number;
   onRequestStart?: () => void;
+  feedbackVariant?: 'check' | 'loading';
 }
 
-export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }: QrScannerProps) {
+export function QrScanner({
+  onScan,
+  active,
+  feedbackToken = 0,
+  onRequestStart,
+  feedbackVariant = 'check',
+}: QrScannerProps) {
   const scannerRef = useRef<{
     stop: () => void | Promise<void>;
     clear: () => void | Promise<void>;
@@ -190,9 +197,13 @@ export function QrScanner({ onScan, active, feedbackToken = 0, onRequestStart }:
         ref={feedbackOverlayRef}
         className="pointer-events-none absolute inset-0 flex items-center justify-center bg-emerald-500/12 opacity-0 transition-opacity duration-150"
       >
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+          {feedbackVariant === 'loading' ? (
+            <Loader2 className="h-8 w-8 animate-spin" strokeWidth={2.5} />
+          ) : (
             <Check className="h-8 w-8" strokeWidth={3} />
-          </div>
+          )}
+        </div>
       </div>
     </div>
   );
