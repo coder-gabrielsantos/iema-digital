@@ -203,7 +203,7 @@ export function Navbar({ role }: NavbarProps) {
               <p className="student-card-print-name">{student.name}</p>
               <p className="student-card-print-class">Turma {student.classCode}</p>
               <div className="student-card-print-qr">
-                <QRCodeSVG value={student._id} size={160} level="H" marginSize={1} />
+                <QRCodeSVG value={student._id} size={256} level="H" marginSize={1} />
               </div>
             </article>
           ))}
@@ -276,7 +276,7 @@ export function Navbar({ role }: NavbarProps) {
           }
 
           .student-card-print-class {
-            margin: 0 0 2mm;
+            margin: 0 0 1.2mm;
             text-align: center;
             font-size: 6pt;
             font-weight: 600;
@@ -286,15 +286,15 @@ export function Navbar({ role }: NavbarProps) {
 
           .student-card-print-qr {
             display: flex;
-            width: 33mm;
-            height: 33mm;
+            width: 40mm;
+            height: 40mm;
             align-items: center;
             justify-content: center;
           }
 
           .student-card-print-qr svg {
-            width: 32mm;
-            height: 32mm;
+            width: 40mm;
+            height: 40mm;
           }
         }
       `}</style>
