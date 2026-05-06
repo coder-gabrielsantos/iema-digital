@@ -4,10 +4,10 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { CheckCircle2, X, XCircle, Keyboard, QrCode, RefreshCw } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Select from 'react-select';
+import AsyncSelect from 'react-select/async';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { StudentPhoto } from '@/components/ui/student-photo';
 import { formatTime, parseStudentIdFromQr } from '@/lib/utils';
@@ -78,6 +78,39 @@ const FILTER_SELECT_STYLES = {
   dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
   menu: (base: object) => ({ ...base, zIndex: 30 }),
 };
+const MANUAL_SELECT_STYLES = {
+  control: (base: object, state: { isFocused?: boolean }) => ({
+    ...base,
+    minHeight: 40,
+    borderRadius: 9999,
+    borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
+    boxShadow: 'none',
+    '&:hover': { borderColor: '#818cf8' },
+  }),
+  valueContainer: (base: object) => ({
+    ...base,
+    minHeight: 40,
+    paddingInline: 12,
+    paddingBlock: 0,
+  }),
+  indicatorsContainer: (base: object) => ({ ...base, minHeight: 40 }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
+  menu: (base: object) => ({ ...base, zIndex: 30 }),
+  menuList: (base: object) => ({
+    ...base,
+    maxHeight: 164,
+    overflowY: 'auto',
+    paddingTop: 0,
+    paddingBottom: 0,
+  }),
+  menuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
+};
+
+interface StudentOption {
+  value: string;
+  label: string;
+}
 
 export default function CantinaPage() {
   const [presentCount, setPresentCount] = useState(0);
@@ -92,7 +125,8 @@ export default function CantinaPage() {
   const [mealStudentError, setMealStudentError] = useState('');
 
   const [scannerActive, setScannerActive] = useState(false);
-  const [manualName, setManualName] = useState('');
+  const [manualStudentId, setManualStudentId] = useState('');
+  const [selectedManualStudent, setSelectedManualStudent] = useState<StudentOption | null>(null);
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [result, setResult] = useState<MealResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -247,9 +281,28 @@ export default function CantinaPage() {
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    processStudentInput(manualName, 'name');
-    setManualName('');
+    processStudentInput(manualStudentId, 'id');
+    setManualStudentId('');
+    setSelectedManualStudent(null);
   };
+
+  const loadManualStudentOptions = useCallback(async (inputValue: string) => {
+    const search = inputValue.trim();
+    if (search.length < 2) return [];
+    try {
+      const res = await fetch(`/api/students?search=${encodeURIComponent(search)}&page=1&pageSize=20`);
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data?.items)) return [];
+      return data.items
+        .map((student: { _id: string; name: string; classCode?: string }) => ({
+          value: student._id,
+          label: `${student.name} - Turma ${student.classCode || 'não informada'}`,
+        }))
+        .sort((a: StudentOption, b: StudentOption) => a.label.localeCompare(b.label, 'pt-BR'));
+    } catch {
+      return [];
+    }
+  }, []);
 
   const mealClassOptions = [
     { value: '', label: 'Todas as turmas' },
@@ -397,17 +450,33 @@ export default function CantinaPage() {
             </CardHeader>
             <CardContent className="bg-white px-4 pb-4 pt-3">
               <form onSubmit={handleManualSubmit} className="flex gap-2">
-                <Input
-                  placeholder="Nome do aluno"
-                  value={manualName}
-                  onChange={(e) => setManualName(e.target.value)}
-                  className="h-10 rounded-full border-slate-200 text-sm"
-                  autoFocus
-                />
+                <div className="flex-1">
+                  <AsyncSelect
+                    inputId="cantina-manual-student"
+                    aria-label="Pesquisar alunos"
+                    isSearchable
+                    cacheOptions
+                    defaultOptions={false}
+                    loadOptions={loadManualStudentOptions}
+                    value={selectedManualStudent}
+                    onChange={(option) => {
+                      setSelectedManualStudent(option);
+                      setManualStudentId(option?.value || '');
+                    }}
+                    placeholder="Pesquisar alunos"
+                    noOptionsMessage={() => 'Nenhum aluno encontrado'}
+                    loadingMessage={() => 'Buscando alunos...'}
+                    classNamePrefix="cantina-manual-student"
+                    styles={MANUAL_SELECT_STYLES}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                    menuPosition="fixed"
+                    autoFocus
+                  />
+                </div>
                 <Button
                   type="submit"
                   loading={status === 'scanning'}
-                  disabled={!manualName.trim()}
+                  disabled={!manualStudentId.trim()}
                   className="h-10 rounded-full border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
                 >
                   Verificar

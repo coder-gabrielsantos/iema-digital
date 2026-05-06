@@ -32,19 +32,9 @@ export async function GET(req: NextRequest) {
     const selectedDate = normalizeDate(searchParams.get('date')) || today;
     const isToday = selectedDate === today;
 
-    const conditions: Record<string, unknown>[] = [];
-    if (classCodeFilter) {
-      conditions.push({ classCode: classCodeFilter });
-    }
-    if (search) {
-      conditions.push({ name: { $regex: search, $options: 'i' } });
-    }
-    const query: Record<string, unknown> =
-      conditions.length === 0
-        ? {}
-        : conditions.length === 1
-          ? conditions[0]
-          : { $and: conditions };
+    const query: Record<string, unknown> = classCodeFilter
+      ? { classCode: classCodeFilter }
+      : {};
 
     const [dbStudents, allDbStudents, rawClassCodes] = await Promise.all([
       Student.find(query)
@@ -60,20 +50,24 @@ export async function GET(req: NextRequest) {
     const classCodes = mergeClassCodes(rawClassCodes);
     const localStudents = getLocalFallbackStudents(
       allDbStudents.map(serializeDbStudent),
-      { search, classCode: classCodeFilter }
+      { search: '', classCode: classCodeFilter }
     );
     const students = [
       ...dbStudents.map(serializeDbStudent),
       ...localStudents,
     ].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    const normalizedSearch = normalizeSearchText(search);
+    const searchableStudents = normalizedSearch
+      ? students.filter((student) => normalizeSearchText(student.name).includes(normalizedSearch))
+      : students;
 
-    const studentIds = students.map((s) => s._id.toString());
+    const studentIds = searchableStudents.map((s) => s._id.toString());
     const [presentSet, earlyExitMap] = await Promise.all([
       getPresentStudentSet(studentIds, selectedDate, isToday, Presence, Attendance),
       getEarlyExitMap(studentIds, selectedDate, Attendance),
     ]);
 
-    const withPresence = students.map((s) => {
+    const withPresence = searchableStudents.map((s) => {
       const studentId = s._id.toString();
       return {
         ...s,
@@ -150,6 +144,16 @@ export async function GET(req: NextRequest) {
 function normalizeDate(date: string | null): string | null {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
   return date;
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 async function getPresentStudentSet(

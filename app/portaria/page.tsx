@@ -3,10 +3,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { XCircle, LogIn, LogOut, Keyboard, QrCode, Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import AsyncSelect from 'react-select/async';
 import { ProtectedLayout } from '@/components/layout/protected-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { formatTime, parseStudentIdFromQr } from '@/lib/utils';
 
 const QrScanner = dynamic(
@@ -27,10 +27,44 @@ interface ScanToast {
 
 const DEBOUNCE_MS = 3000;
 const TOAST_TTL_MS = 4000;
+const MANUAL_SELECT_STYLES = {
+  control: (base: object, state: { isFocused?: boolean }) => ({
+    ...base,
+    minHeight: 40,
+    borderRadius: 9999,
+    borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
+    boxShadow: 'none',
+    '&:hover': { borderColor: '#818cf8' },
+  }),
+  valueContainer: (base: object) => ({
+    ...base,
+    minHeight: 40,
+    paddingInline: 12,
+    paddingBlock: 0,
+  }),
+  indicatorsContainer: (base: object) => ({ ...base, minHeight: 40 }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base: object) => ({ ...base, color: '#64748b', padding: 6 }),
+  menu: (base: object) => ({ ...base, zIndex: 30 }),
+  menuList: (base: object) => ({
+    ...base,
+    maxHeight: 164,
+    overflowY: 'auto',
+    paddingTop: 0,
+    paddingBottom: 0,
+  }),
+  menuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
+};
+
+interface StudentOption {
+  value: string;
+  label: string;
+}
 
 export default function PortariaPage() {
   const [scannerActive, setScannerActive] = useState(false);
-  const [manualName, setManualName] = useState('');
+  const [manualStudentId, setManualStudentId] = useState('');
+  const [selectedManualStudent, setSelectedManualStudent] = useState<StudentOption | null>(null);
   const [inputMode, setInputMode] = useState<'camera' | 'manual'>('camera');
   const [toasts, setToasts] = useState<ScanToast[]>([]);
   const [scanFeedbackToken, setScanFeedbackToken] = useState(0);
@@ -162,11 +196,30 @@ export default function PortariaPage() {
     e.preventDefault();
     if (manualProcessing.current) return;
     manualProcessing.current = true;
-    const name = manualName.trim();
-    setManualName('');
-    await processStudentInput(name, 'name');
+    const studentId = manualStudentId.trim();
+    setManualStudentId('');
+    setSelectedManualStudent(null);
+    await processStudentInput(studentId, 'id');
     manualProcessing.current = false;
   };
+
+  const loadManualStudentOptions = useCallback(async (inputValue: string) => {
+    const search = inputValue.trim();
+    if (search.length < 2) return [];
+    try {
+      const res = await fetch(`/api/students?search=${encodeURIComponent(search)}&page=1&pageSize=20`);
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data?.items)) return [];
+      return data.items
+        .map((student: { _id: string; name: string; classCode?: string }) => ({
+          value: student._id,
+          label: `${student.name} - Turma ${student.classCode || 'não informada'}`,
+        }))
+        .sort((a: StudentOption, b: StudentOption) => a.label.localeCompare(b.label, 'pt-BR'));
+    } catch {
+      return [];
+    }
+  }, []);
 
   return (
     <ProtectedLayout requiredRole={['admin', 'portaria']}>
@@ -242,16 +295,32 @@ export default function PortariaPage() {
               </CardHeader>
               <CardContent className="bg-white px-4 py-4">
                 <form onSubmit={handleManualSubmit} className="flex gap-2">
-                  <Input
-                    placeholder="Nome do aluno"
-                    value={manualName}
-                    onChange={(e) => setManualName(e.target.value)}
-                    className="h-10 rounded-full border-slate-200 text-sm"
-                    autoFocus
-                  />
+                  <div className="flex-1">
+                    <AsyncSelect
+                      inputId="portaria-manual-student"
+                      aria-label="Pesquisar alunos"
+                      isSearchable
+                      cacheOptions
+                      defaultOptions={false}
+                      loadOptions={loadManualStudentOptions}
+                      value={selectedManualStudent}
+                      onChange={(option) => {
+                        setSelectedManualStudent(option);
+                        setManualStudentId(option?.value || '');
+                      }}
+                      placeholder="Pesquisar alunos"
+                      noOptionsMessage={() => 'Nenhum aluno encontrado'}
+                      loadingMessage={() => 'Buscando alunos...'}
+                      classNamePrefix="portaria-manual-student"
+                      styles={MANUAL_SELECT_STYLES}
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                      menuPosition="fixed"
+                      autoFocus
+                    />
+                  </div>
                   <Button
                     type="submit"
-                    disabled={!manualName.trim()}
+                    disabled={!manualStudentId.trim()}
                     className="h-10 rounded-full border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
                   >
                     Verificar
