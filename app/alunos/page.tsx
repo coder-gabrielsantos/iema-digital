@@ -30,6 +30,7 @@ interface Student {
   isPresent: boolean;
   earlyExitTime?: string;
   absenceJustification?: string;
+  earlyExitJustification?: string;
 }
 
 interface StudentDetail extends Student {
@@ -113,7 +114,8 @@ export default function AlunosPage() {
   const [qrContextStudent, setQrContextStudent] = useState<Student | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
   const [justificationStudent, setJustificationStudent] = useState<Student | null>(null);
-  const [absenceJustification, setAbsenceJustification] = useState('');
+  const [justificationKind, setJustificationKind] = useState<'absence' | 'early-exit'>('absence');
+  const [justificationDraft, setJustificationDraft] = useState('');
   const [isEditingJustification, setIsEditingJustification] = useState(false);
   const [savingJustification, setSavingJustification] = useState(false);
   const [deletingJustification, setDeletingJustification] = useState(false);
@@ -232,22 +234,27 @@ export default function AlunosPage() {
     setQrContextStudent(null);
   }
 
-  function openJustificationModal(student: Student) {
+  function openJustificationModal(student: Student, kind: 'absence' | 'early-exit') {
+    setJustificationKind(kind);
     setJustificationStudent(student);
-    setAbsenceJustification(student.absenceJustification || '');
-    setIsEditingJustification(!student.absenceJustification);
+    const text =
+      kind === 'absence'
+        ? student.absenceJustification || ''
+        : student.earlyExitJustification || '';
+    setJustificationDraft(text);
+    setIsEditingJustification(!text);
     setJustificationError('');
   }
 
   function closeJustificationModal() {
-    if (savingJustification) return;
+    if (savingJustification || deletingJustification) return;
     setJustificationStudent(null);
-    setAbsenceJustification('');
+    setJustificationDraft('');
     setIsEditingJustification(false);
     setJustificationError('');
   }
 
-  async function saveAbsenceJustification(event: FormEvent<HTMLFormElement>) {
+  async function saveJustification(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!justificationStudent || !isEditingJustification) return;
 
@@ -255,17 +262,26 @@ export default function AlunosPage() {
     const submitter = nativeSubmitEvent.submitter as HTMLButtonElement | null;
     if (submitter?.dataset.action !== 'save-justification') return;
 
-    const justification = absenceJustification.trim();
+    const justification = justificationDraft.trim();
     if (!justification) {
-      setJustificationError('Informe a justificativa da ausência.');
+      setJustificationError(
+        justificationKind === 'absence'
+          ? 'Informe a justificativa da ausência.'
+          : 'Informe a justificativa da saída antecipada.'
+      );
       return;
     }
 
     setSavingJustification(true);
     setJustificationError('');
 
+    const endpoint =
+      justificationKind === 'absence'
+        ? '/api/absence-justifications'
+        : '/api/early-exit-justifications';
+
     try {
-      const res = await fetch('/api/absence-justifications', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -281,15 +297,18 @@ export default function AlunosPage() {
         throw new Error(data.error || 'Falha ao salvar justificativa.');
       }
 
+      const saved = data.justification || justification;
       setStudents((current) =>
         current.map((student) =>
           student._id === justificationStudent._id
-            ? { ...student, absenceJustification: data.justification || justification }
+            ? justificationKind === 'absence'
+              ? { ...student, absenceJustification: saved }
+              : { ...student, earlyExitJustification: saved }
             : student
         )
       );
       setJustificationStudent(null);
-      setAbsenceJustification('');
+      setJustificationDraft('');
       setIsEditingJustification(false);
     } catch (e) {
       setJustificationError(
@@ -300,14 +319,19 @@ export default function AlunosPage() {
     }
   }
 
-  async function deleteAbsenceJustification() {
+  async function deleteJustification() {
     if (!justificationStudent) return;
 
     setDeletingJustification(true);
     setJustificationError('');
 
+    const endpoint =
+      justificationKind === 'absence'
+        ? '/api/absence-justifications'
+        : '/api/early-exit-justifications';
+
     try {
-      const res = await fetch('/api/absence-justifications', {
+      const res = await fetch(endpoint, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -323,16 +347,20 @@ export default function AlunosPage() {
       setStudents((current) =>
         current.map((student) =>
           student._id === justificationStudent._id
-            ? { ...student, absenceJustification: '' }
+            ? justificationKind === 'absence'
+              ? { ...student, absenceJustification: '' }
+              : { ...student, earlyExitJustification: '' }
             : student
         )
       );
       setQrContextStudent((current) =>
         current && current._id === justificationStudent._id
-          ? { ...current, absenceJustification: '' }
+          ? justificationKind === 'absence'
+            ? { ...current, absenceJustification: '' }
+            : { ...current, earlyExitJustification: '' }
           : current
       );
-      setAbsenceJustification('');
+      setJustificationDraft('');
       setIsEditingJustification(false);
     } catch (e) {
       setJustificationError(
@@ -594,9 +622,18 @@ export default function AlunosPage() {
                     </button>
                     <div className="justify-self-start md:justify-self-end">
                       {student.earlyExitTime ? (
-                        <Badge variant="warning" className="w-fit">
-                          Saída antecipada às {formatTime(student.earlyExitTime)}
-                        </Badge>
+                        student.earlyExitJustification ? (
+                          <Badge variant="outline" className="w-fit">
+                            Saída antecipada justificada
+                            <span className="ml-1 font-normal text-slate-500">
+                              ({formatTime(student.earlyExitTime)})
+                            </span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="warning" className="w-fit">
+                            Saída antecipada às {formatTime(student.earlyExitTime)}
+                          </Badge>
+                        )
                       ) : student.isPresent ? (
                         <Badge variant="success" className="w-fit">
                           {isSelectedDateToday ? 'Presente' : 'Com frequência'}
@@ -651,12 +688,14 @@ export default function AlunosPage() {
             <form
               className="app-panel w-full max-w-lg rounded-md p-6 shadow-none"
               onClick={(e) => e.stopPropagation()}
-              onSubmit={(event) => void saveAbsenceJustification(event)}
+              onSubmit={(event) => void saveJustification(event)}
             >
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Justificativa de ausência
+                  {justificationKind === 'absence'
+                    ? 'Justificativa de ausência'
+                    : 'Justificativa de saída antecipada'}
                 </p>
                 <h3 className="mt-1 text-xl font-bold text-slate-900">
                   {justificationStudent.name}
@@ -665,13 +704,13 @@ export default function AlunosPage() {
                   Turma {justificationStudent.classCode} • {selectedDateLabel}
                 </p>
                 </div>
-                {absenceJustification ? (
+                {justificationDraft ? (
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    onClick={() => void deleteAbsenceJustification()}
+                    onClick={() => void deleteJustification()}
                     disabled={savingJustification || deletingJustification}
                     aria-label="Apagar justificativa"
                     title="Apagar justificativa"
@@ -682,34 +721,38 @@ export default function AlunosPage() {
               </div>
 
               <label
-                htmlFor="absence-justification"
+                htmlFor="justification-textarea"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
                 Justificativa
               </label>
               {isEditingJustification ? (
                 <textarea
-                  id="absence-justification"
-                  value={absenceJustification}
+                  id="justification-textarea"
+                  value={justificationDraft}
                   onChange={(event) => {
-                    setAbsenceJustification(event.target.value);
+                    setJustificationDraft(event.target.value);
                     if (justificationError) setJustificationError('');
                   }}
                   maxLength={1000}
                   rows={5}
-                  placeholder="Digite o motivo da ausência..."
+                  placeholder={
+                    justificationKind === 'absence'
+                      ? 'Digite o motivo da ausência...'
+                      : 'Digite o motivo da saída antecipada...'
+                  }
                   className="w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] placeholder:text-slate-400 transition-colors focus-visible:border-indigo-400/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600/18 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={savingJustification}
                   autoFocus
                 />
               ) : (
                 <div className="min-h-24 whitespace-pre-wrap rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                  {absenceJustification || 'Sem justificativa cadastrada.'}
+                  {justificationDraft || 'Sem justificativa cadastrada.'}
                 </div>
               )}
               <div className="mt-2 flex items-center justify-between gap-3">
                 <p className="text-xs text-slate-400">
-                  {absenceJustification.length}/1000 caracteres
+                  {justificationDraft.length}/1000 caracteres
                 </p>
                 {justificationError ? (
                   <p className="text-right text-xs font-medium text-rose-600">
@@ -783,13 +826,27 @@ export default function AlunosPage() {
                   variant="outline"
                   className="mb-3 w-full"
                   onClick={() => {
-                    openJustificationModal(qrContextStudent);
+                    openJustificationModal(qrContextStudent, 'absence');
                     closeQrModal();
                   }}
                 >
                   {qrContextStudent.absenceJustification
                     ? 'Ver justificativa'
                     : 'Justificar ausência'}
+                </Button>
+              ) : null}
+              {qrContextStudent && qrContextStudent.earlyExitTime ? (
+                <Button
+                  variant="outline"
+                  className="mb-3 w-full"
+                  onClick={() => {
+                    openJustificationModal(qrContextStudent, 'early-exit');
+                    closeQrModal();
+                  }}
+                >
+                  {qrContextStudent.earlyExitJustification
+                    ? 'Ver justificativa de saída'
+                    : 'Justificar saída antecipada'}
                 </Button>
               ) : null}
               <Button variant="outline" className="w-full" onClick={closeQrModal}>
