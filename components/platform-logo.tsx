@@ -18,7 +18,7 @@ export function PlatformLogo({ className, variant = 'default', size = 48, showIc
       {showIcon ? (
         <div
           className={cn(
-            'flex items-center justify-center rounded-2xl shadow-glow',
+            'flex items-center justify-center rounded-md shadow-glow',
             isWhite ? 'gradient-primary' : 'gradient-primary'
           )}
           style={{ width: size, height: size }}

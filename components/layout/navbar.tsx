@@ -102,18 +102,12 @@ export function Navbar({ role }: NavbarProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'group relative flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                    'flex items-center px-3 py-2 text-sm font-medium transition-colors duration-200',
                     active
-                      ? 'bg-slate-100 text-slate-900'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'text-slate-900 underline decoration-slate-900 decoration-2 underline-offset-8'
+                      : 'text-slate-600 hover:text-slate-900 hover:underline hover:decoration-slate-400 hover:decoration-2 hover:underline-offset-8'
                   )}
                 >
-                  <span
-                    className={cn(
-                      'absolute -bottom-px left-3 right-3 h-0.5 rounded-full transition-opacity duration-200',
-                      active ? 'bg-slate-900 opacity-100' : 'bg-slate-300 opacity-0 group-hover:opacity-100'
-                    )}
-                  />
                   {item.label}
                 </Link>
               );
@@ -125,7 +119,7 @@ export function Navbar({ role }: NavbarProps) {
                 type="button"
                 onClick={() => void handleDownloadCards()}
                 disabled={downloadingCards}
-                className="hidden items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55 md:flex"
+                className="hidden items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55 md:flex"
               >
                 <QrCode className="h-4 w-4" />
                 {downloadingCards ? 'Gerando...' : 'QR-code'}
@@ -136,7 +130,7 @@ export function Navbar({ role }: NavbarProps) {
               type="button"
               onClick={handleLogout}
               className={cn(
-                'order-2 flex items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-colors duration-200 md:order-none',
+                'order-2 flex items-center justify-center gap-2 rounded-md border text-sm font-medium transition-colors duration-200 md:order-none',
                 'h-10 w-10 shrink-0 border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700 md:h-auto md:w-auto md:border-red-200 md:px-3 md:py-2'
               )}
             >
@@ -149,7 +143,7 @@ export function Navbar({ role }: NavbarProps) {
               aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
               aria-expanded={mobileOpen}
               className={cn(
-                'order-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200 md:order-none md:hidden',
+                'order-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-colors duration-200 md:order-none md:hidden',
                 mobileOpen
                   ? 'border-slate-300 bg-slate-100 text-slate-900'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -163,7 +157,7 @@ export function Navbar({ role }: NavbarProps) {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-30 bg-slate-900/20 pt-16 md:hidden">
-          <nav className="mx-4 mt-3 space-y-1.5 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm animate-in slide-in-from-top-1 fade-in duration-200">
+          <nav className="mx-4 mt-3 space-y-1.5 rounded-md border border-slate-200 bg-white p-2.5 shadow-sm animate-in slide-in-from-top-1 fade-in duration-200">
             {visibleItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -172,10 +166,10 @@ export function Navbar({ role }: NavbarProps) {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    'flex items-center rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors duration-150',
+                    'flex items-center px-3.5 py-2.5 text-sm font-medium transition-colors duration-150',
                     active
-                      ? 'bg-slate-100 text-slate-900'
-                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'text-slate-900 underline decoration-slate-900 decoration-2 underline-offset-8'
+                      : 'text-slate-700 hover:text-slate-900 hover:underline hover:decoration-slate-400 hover:decoration-2 hover:underline-offset-8'
                   )}
                 >
                   {item.label}
@@ -187,7 +181,7 @@ export function Navbar({ role }: NavbarProps) {
                 type="button"
                 onClick={() => void handleDownloadCards()}
                 disabled={downloadingCards}
-                className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55"
+                className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55"
               >
                 {downloadingCards ? 'Gerando...' : 'QR-code'}
                 <QrCode className="h-4 w-4" />

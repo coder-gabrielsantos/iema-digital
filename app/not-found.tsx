@@ -4,7 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50/60 p-4 text-center">
-      <div className="gradient-primary shadow-glow mb-6 flex h-16 w-16 items-center justify-center rounded-2xl">
+      <div className="gradient-primary shadow-glow mb-6 flex h-16 w-16 items-center justify-center rounded-md">
         <ShieldCheck className="h-8 w-8 text-white" />
       </div>
       <h1 className="text-6xl font-black text-slate-200 mb-4">404</h1>
@@ -14,7 +14,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="inline-flex items-center gap-2 rounded-lg bg-[#4F46E5] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4338CA]"
+        className="inline-flex items-center gap-2 rounded-md bg-[#4F46E5] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4338CA]"
       >
         Voltar ao início
       </Link>

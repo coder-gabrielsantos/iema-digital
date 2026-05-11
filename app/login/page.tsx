@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 function fieldClass(dark?: boolean) {
   return cn(
-    'h-11 rounded-lg border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2',
+    'h-11 rounded-md border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2',
     dark
       ? 'border-slate-600/80 bg-slate-900/50 text-white shadow-none placeholder:text-slate-500 focus-visible:border-indigo-400 focus-visible:ring-indigo-500/25'
       : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:border-indigo-400 focus-visible:ring-indigo-500/20'
@@ -85,7 +85,7 @@ function LoginForm({
         {error ? (
           <div
             className={cn(
-              'rounded-xl border p-3 text-left text-sm',
+              'rounded-md border p-3 text-left text-sm',
               dark ? 'border-rose-500/30 bg-rose-950/40 text-rose-300' : 'border-rose-200/80 bg-rose-50/80 text-rose-800'
             )}
           >
@@ -100,7 +100,7 @@ function LoginForm({
           type="submit"
           loading={loading}
           className={cn(
-            'h-11 w-full rounded-full text-sm font-semibold shadow-sm transition-transform active:scale-[0.99]',
+            'h-11 w-full rounded-md text-sm font-semibold shadow-sm transition-transform active:scale-[0.99]',
             dark ? 'bg-[#4F46E5] text-white hover:bg-[#4338CA]' : ''
           )}
         >

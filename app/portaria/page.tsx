@@ -37,7 +37,7 @@ const MANUAL_SELECT_STYLES: StylesConfig<StudentOption, false> = {
   control: (base, state) => ({
     ...base,
     minHeight: 40,
-    borderRadius: 9999,
+    borderRadius: '0.375rem',
     borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
@@ -51,7 +51,12 @@ const MANUAL_SELECT_STYLES: StylesConfig<StudentOption, false> = {
   indicatorsContainer: (base) => ({ ...base, minHeight: 40 }),
   indicatorSeparator: () => ({ display: 'none' }),
   dropdownIndicator: (base) => ({ ...base, color: '#64748b', padding: 6 }),
-  menu: (base) => ({ ...base, zIndex: 30 }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 30,
+    borderRadius: '0.375rem',
+    overflow: 'hidden',
+  }),
   menuList: (base) => ({
     ...base,
     maxHeight: 164,
@@ -272,7 +277,7 @@ export default function PortariaPage() {
 
           {/* Camera */}
           <div
-            className={`mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium ${
+            className={`mb-4 overflow-hidden rounded-md border border-slate-200/70 bg-white shadow-premium ${
               inputMode === 'camera' ? 'block' : 'hidden'
             }`}
           >
@@ -288,7 +293,7 @@ export default function PortariaPage() {
 
           {/* Manual */}
           {inputMode === 'manual' && (
-            <Card className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
+            <Card className="mb-4 overflow-hidden rounded-md border border-slate-200/70 bg-white shadow-premium">
               <CardHeader className="border-b border-slate-100 px-5 py-3.5">
                 <CardTitle className="text-xs font-medium tracking-wide text-slate-400">
                   Registro manual
@@ -322,7 +327,7 @@ export default function PortariaPage() {
                   <Button
                     type="submit"
                     disabled={!manualStudentId.trim()}
-                    className="h-10 rounded-full border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
+                    className="h-10 rounded-md border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
                   >
                     Verificar
                   </Button>
@@ -351,7 +356,7 @@ function ScanToastCard({
 }) {
   if (toast.status === 'pending') {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-3 rounded-md border border-slate-100 bg-slate-50 px-4 py-3 shadow-sm">
         <Loader2 className="h-5 w-5 animate-spin text-indigo-400 shrink-0" />
         <p className="text-sm text-slate-500">Processando...</p>
       </div>
@@ -361,7 +366,7 @@ function ScanToastCard({
   if (toast.status === 'error') {
     return (
       <div
-        className="flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 shadow-sm cursor-pointer"
+        className="flex items-center gap-3 rounded-md border border-red-100 bg-red-50 px-4 py-3 shadow-sm cursor-pointer"
         onClick={() => onDismiss(toast.id)}
       >
         <XCircle className="h-5 w-5 text-red-400 shrink-0" />
@@ -377,7 +382,7 @@ function ScanToastCard({
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-sm cursor-pointer transition-opacity ${
+      className={`flex items-center gap-3 rounded-md border px-4 py-3 shadow-sm cursor-pointer transition-opacity ${
         isEntry
           ? 'border-emerald-100 bg-emerald-50'
           : 'border-amber-100 bg-amber-50'

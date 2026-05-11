@@ -162,7 +162,7 @@ export function QrScanner({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl bg-red-50 px-6 py-8 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-md bg-red-50 px-6 py-8 text-center">
         <CameraOff className="h-9 w-9 text-red-400" />
         <p className="text-sm text-red-600">{error}</p>
         <Button variant="outline" size="sm" onClick={() => setRetryToken((prev) => prev + 1)}>

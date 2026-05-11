@@ -142,7 +142,7 @@ export default function AuthSplitShell({ mobileSlot, desktopSlot }: AuthSplitShe
         </section>
 
         <section className="hidden items-center justify-center bg-white px-6 py-14 sm:px-10 lg:flex">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.12)]">
+          <div className="w-full max-w-sm rounded-md border border-slate-200/80 bg-white p-6 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.12)]">
             {desktopSlot}
           </div>
         </section>

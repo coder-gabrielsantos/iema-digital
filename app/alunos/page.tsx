@@ -59,7 +59,7 @@ const FILTER_SELECT_STYLES = {
     ...base,
     minHeight: 44,
     height: 44,
-    borderRadius: 6,
+    borderRadius: '0.375rem',
     borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
@@ -73,7 +73,12 @@ const FILTER_SELECT_STYLES = {
   indicatorsContainer: (base: object) => ({ ...base, height: 44 }),
   indicatorSeparator: () => ({ display: 'none' }),
   dropdownIndicator: (base: object) => ({ ...base, color: '#64748b' }),
-  menu: (base: object) => ({ ...base, zIndex: 20 }),
+  menu: (base: object) => ({
+    ...base,
+    zIndex: 20,
+    borderRadius: '0.375rem',
+    overflow: 'hidden',
+  }),
 };
 
 /** ~5 opções visíveis; 190px cortava a 5ª linha (opções ~40–44px). */
@@ -373,14 +378,14 @@ export default function AlunosPage() {
                 aria-expanded={isCalendarOpen}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                     <CalendarDays className="h-4 w-4" />
                   </span>
                   <span>{selectedDateLabel}</span>
                 </span>
               </Button>
               {isCalendarOpen ? (
-                <div className="absolute right-0 z-30 mt-3 w-[20rem] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-[0_24px_70px_-35px_rgba(15,23,42,0.55)] backdrop-blur">
+                <div className="absolute right-0 z-30 mt-3 w-[20rem] overflow-hidden rounded-md border border-slate-200/80 bg-white/95 p-4 shadow-[0_24px_70px_-35px_rgba(15,23,42,0.55)] backdrop-blur">
                   <DayPicker
                     mode="single"
                     locale={ptBR}
@@ -397,17 +402,17 @@ export default function AlunosPage() {
                     classNames={{
                       root: 'w-full text-slate-900',
                       month: 'space-y-3',
-                      month_caption: 'mb-1 flex h-10 items-center justify-center rounded-xl bg-slate-50 text-sm font-bold capitalize text-slate-900',
+                      month_caption: 'mb-1 flex h-10 items-center justify-center rounded-md bg-slate-50 text-sm font-bold capitalize text-slate-900',
                       caption_label: 'tracking-tight',
                       nav: 'absolute left-4 right-4 top-4 flex items-center justify-between',
-                      button_previous: 'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-40',
-                      button_next: 'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-40',
+                      button_previous: 'inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-40',
+                      button_next: 'inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-40',
                       month_grid: 'w-full border-separate border-spacing-y-1',
                       weekdays: 'grid grid-cols-7 px-1',
                       weekday: 'pb-1 text-center text-[0.7rem] font-bold uppercase tracking-wide text-slate-400',
                       week: 'grid grid-cols-7',
                       day: 'text-center',
-                      day_button: 'mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25',
+                      day_button: 'mx-auto flex h-10 w-10 items-center justify-center rounded-md text-sm font-medium text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/25',
                       selected: '[&>button]:bg-indigo-600 [&>button]:text-white [&>button]:shadow-[0_10px_22px_-10px_rgba(79,70,229,0.95)] [&>button]:hover:bg-indigo-600 [&>button]:hover:text-white',
                       today: '[&>button]:font-bold [&>button]:text-indigo-700 [&>button]:ring-1 [&>button]:ring-indigo-200',
                       disabled: '[&>button]:cursor-not-allowed [&>button]:text-slate-300 [&>button]:hover:bg-transparent [&>button]:hover:text-slate-300',
@@ -481,7 +486,7 @@ export default function AlunosPage() {
           </div>
         ) : null}
 
-        <Card className="!rounded-none border-slate-200">
+        <Card className="overflow-hidden rounded-md border-slate-200">
           <CardContent className="p-0">
             <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -532,7 +537,7 @@ export default function AlunosPage() {
                       setSearch(e.target.value);
                       setPage(1);
                     }}
-                    className="h-11 w-full rounded-none pl-9"
+                    className="h-11 w-full rounded-md pl-9"
                   />
                 </div>
               </div>
@@ -613,7 +618,7 @@ export default function AlunosPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-4 flex flex-col gap-3 border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-600">
             Exibindo página {page} de {totalPages}
           </p>

@@ -80,7 +80,7 @@ const FILTER_SELECT_STYLES: StylesConfig<FilterOption, false> = {
     ...base,
     minHeight: 36,
     height: 36,
-    borderRadius: 6,
+    borderRadius: '0.375rem',
     borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
@@ -94,13 +94,18 @@ const FILTER_SELECT_STYLES: StylesConfig<FilterOption, false> = {
   indicatorsContainer: (base) => ({ ...base, height: 36 }),
   indicatorSeparator: () => ({ display: 'none' }),
   dropdownIndicator: (base) => ({ ...base, color: '#64748b', padding: 6 }),
-  menu: (base) => ({ ...base, zIndex: 30 }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 30,
+    borderRadius: '0.375rem',
+    overflow: 'hidden',
+  }),
 };
 const MANUAL_SELECT_STYLES: StylesConfig<StudentOption, false> = {
   control: (base, state) => ({
     ...base,
     minHeight: 40,
-    borderRadius: 9999,
+    borderRadius: '0.375rem',
     borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
     boxShadow: 'none',
     '&:hover': { borderColor: '#818cf8' },
@@ -114,7 +119,12 @@ const MANUAL_SELECT_STYLES: StylesConfig<StudentOption, false> = {
   indicatorsContainer: (base) => ({ ...base, minHeight: 40 }),
   indicatorSeparator: () => ({ display: 'none' }),
   dropdownIndicator: (base) => ({ ...base, color: '#64748b', padding: 6 }),
-  menu: (base) => ({ ...base, zIndex: 30 }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 30,
+    borderRadius: '0.375rem',
+    overflow: 'hidden',
+  }),
   menuList: (base) => ({
     ...base,
     maxHeight: 164,
@@ -472,7 +482,7 @@ export default function CantinaPage() {
         </div>
 
         {inputMode === 'camera' && (
-          <div className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
+          <div className="mb-4 overflow-hidden rounded-md border border-slate-200/70 bg-white shadow-premium">
             <div className="bg-white p-0">
               <QrScanner
                 onScan={handleScan}
@@ -486,7 +496,7 @@ export default function CantinaPage() {
         )}
 
         {inputMode === 'manual' && (
-          <Card className="mb-4 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-premium">
+          <Card className="mb-4 overflow-hidden rounded-md border border-slate-200/70 bg-white shadow-premium">
             <CardHeader className="border-b border-slate-100 px-5 py-3.5">
               <CardTitle className="text-xs font-medium tracking-wide text-slate-400">
                 Registro manual
@@ -521,7 +531,7 @@ export default function CantinaPage() {
                   type="submit"
                   loading={isProcessing}
                   disabled={!manualStudentId.trim()}
-                  className="h-10 rounded-full border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
+                  className="h-10 rounded-md border-0 bg-indigo-500 px-4 text-white shadow-sm shadow-indigo-200 hover:bg-indigo-600"
                 >
                   Verificar
                 </Button>
