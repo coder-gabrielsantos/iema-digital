@@ -9,6 +9,7 @@ import {
   type ManualStudentOption,
 } from '@/components/shared/manual-student-entry-form';
 import { formatTime, parseStudentIdFromQr } from '@/lib/utils';
+import { iemaKeyHeaders } from '@/lib/client-iema-key';
 
 const QrScanner = dynamic(
   () => import('@/components/portaria/qr-scanner').then((m) => m.QrScanner),
@@ -82,7 +83,7 @@ export default function PortariaPage() {
       try {
         const res = await fetch('/api/attendance', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...iemaKeyHeaders() },
           body: JSON.stringify(
             mode === 'name' ? { studentName: key } : { studentId: key }
           ),
@@ -191,12 +192,12 @@ export default function PortariaPage() {
   }, []);
 
   return (
-    <ProtectedLayout requiredRole={['admin', 'portaria']}>
+    <ProtectedLayout requiredRole={['gestao', 'servidores']}>
       <div className="min-h-[calc(100vh-4rem)] bg-white">
         <div className="mx-auto max-w-3xl px-4 py-8">
           <div className="mb-6">
             <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Portaria</h1>
-            <p className="mt-1 text-sm text-slate-500">Escaneie o QR para registrar acesso</p>
+            <p className="mt-1 text-sm text-slate-500">Escaneie o QR ou busque o aluno para registrar o acesso.</p>
           </div>
 
           {/* Mode toggle */}
@@ -267,7 +268,7 @@ export default function PortariaPage() {
               }}
               onSubmit={handleManualSubmit}
               submitDisabled={!manualStudentId.trim()}
-              contextHint="registrar a entrada ou a saída"
+              contextHint="registrar entrada ou saída"
             />
           )}
 

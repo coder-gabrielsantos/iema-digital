@@ -16,11 +16,10 @@ MVP da plataforma de gestão escolar do IEMA, com controle de presença via QR C
 
 ## Funcionalidades
 
-| Módulo | Chave de Acesso | Descrição |
+| Papel | Chave de Acesso | Descrição |
 |--------|----------------|-----------|
-| **Admin** | `LOGIN_KEY_ADMIN` | Dashboard com métricas, gráfico de fluxo, lista de alunos |
-| **Portaria** | `LOGIN_KEY_PORTARIA` | Leitura de QR Code para registro de entrada/saída |
-| **Cantina** | `LOGIN_KEY_CANTINA` | Validação de refeição e contador de alunos presentes |
+| **Gestão** | `LOGIN_KEY_GESTAO` | Dashboard completo, justificativas, cartões QR, portaria e cantina |
+| **Servidores** | `LOGIN_KEY_SERVIDORES` | Dashboard, portaria e cantina |
 
 ## Configuração
 
@@ -36,9 +35,8 @@ Crie um arquivo `.env.local` na raiz do projeto:
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/iema-digital
-LOGIN_KEY_ADMIN=ADMIN-IEMA
-LOGIN_KEY_PORTARIA=PORTARIA-IEMA
-LOGIN_KEY_CANTINA=CANTINA-IEMA
+LOGIN_KEY_GESTAO=ADMIN-IEMA
+LOGIN_KEY_SERVIDORES=PORTARIA-IEMA
 ```
 
 Para produção, use uma URI do MongoDB Atlas:
@@ -57,7 +55,7 @@ Acesse [http://localhost:3000](http://localhost:3000)
 
 ### 4. Popular dados de exemplo
 
-Após iniciar o servidor, acesse a página **Alunos** (com o valor definido em `LOGIN_KEY_ADMIN`) e clique em **"Popular Mock"** para criar 50 alunos de exemplo.
+Após iniciar o servidor, acesse o **Dashboard** com `LOGIN_KEY_GESTAO` e clique em **"Popular Mock"** para criar 50 alunos de exemplo.
 
 Ou via API:
 
@@ -70,10 +68,10 @@ curl -X POST http://localhost:3000/api/seed
 ```
 app/
   login/          # Página de login com chave de acesso
-  dashboard/      # Dashboard admin (métricas + gráfico)
-  portaria/       # Módulo de escaneamento QR (entrada/saída)
-  cantina/        # Módulo de refeição + validação QR
-  alunos/         # Lista de alunos com filtros e gerador de QR
+  dashboard/      # Redireciona para /alunos
+  portaria/       # QR na portaria (entrada; saída antecipada só gestão)
+  cantina/        # Refeição + validação QR
+  alunos/         # Dashboard: presença, filtros (gestão: justificativas e cartões)
   api/
     auth/         # Validação de chave de acesso
     students/     # CRUD de alunos

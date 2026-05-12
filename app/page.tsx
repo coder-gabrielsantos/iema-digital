@@ -2,19 +2,18 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { readStoredRole } from '@/lib/stored-role';
 
 export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem('iema_role');
+    const role = readStoredRole();
     if (!role) {
       router.replace('/login');
       return;
     }
-    if (role === 'admin') router.replace('/alunos');
-    else if (role === 'portaria') router.replace('/portaria');
-    else if (role === 'cantina') router.replace('/cantina');
+    if (role === 'gestao' || role === 'servidores') router.replace('/alunos');
     else router.replace('/login');
   }, [router]);
 

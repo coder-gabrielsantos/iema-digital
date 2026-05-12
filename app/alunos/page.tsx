@@ -13,13 +13,14 @@ import { QRCodeSVG } from 'qrcode.react';
 import Select from 'react-select';
 import { DayPicker } from 'react-day-picker';
 import { ptBR } from 'date-fns/locale';
-import { ProtectedLayout } from '@/components/layout/protected-layout';
+import { ProtectedLayout, useViewerRole } from '@/components/layout/protected-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { StudentPhoto } from '@/components/ui/student-photo';
 import { formatTime } from '@/lib/utils';
+import { iemaKeyHeaders } from '@/lib/client-iema-key';
 
 interface Student {
   _id: string;
@@ -96,7 +97,10 @@ function parseDateString(dateString: string) {
   return new Date(year, (month || 1) - 1, day || 1);
 }
 
-export default function AlunosPage() {
+function AlunosDashboard() {
+  const viewerRole = useViewerRole();
+  const isGestao = viewerRole === 'gestao';
+
   const todayInputValue = getInputDateString();
   const [students, setStudents] = useState<Student[]>([]);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -202,6 +206,12 @@ export default function AlunosPage() {
   }, [fetchStudents, fetchDashboard, page]);
 
   useEffect(() => {
+    if (viewerRole === 'servidores') {
+      setFilter('present');
+    }
+  }, [viewerRole]);
+
+  useEffect(() => {
     if (!isCalendarOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
@@ -236,6 +246,7 @@ export default function AlunosPage() {
   }
 
   function openJustificationModal(student: Student, kind: 'absence' | 'early-exit') {
+    if (!isGestao) return;
     setJustificationKind(kind);
     setJustificationStudent(student);
     const text =
@@ -284,7 +295,7 @@ export default function AlunosPage() {
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...iemaKeyHeaders() },
         body: JSON.stringify({
           studentId: justificationStudent._id,
           studentName: justificationStudent.name,
@@ -334,7 +345,7 @@ export default function AlunosPage() {
     try {
       const res = await fetch(endpoint, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...iemaKeyHeaders() },
         body: JSON.stringify({
           studentId: justificationStudent._id,
           date: selectedDate,
@@ -383,16 +394,15 @@ export default function AlunosPage() {
   const todayDateObj = parseDateString(todayInputValue);
 
   return (
-    <ProtectedLayout requiredRole="admin">
       <div className="min-h-[calc(100vh-4rem)] bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Painel de Alunos</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
             <p className="mt-1 text-sm text-slate-500">
               {isSelectedDateToday
-                ? 'Lista unificada com presença em tempo real para acompanhamento da administração'
-                : 'Histórico de frequência salvo para a data selecionada'}
+                ? 'Presença e indicadores atualizados ao longo do dia.'
+                : 'Frequência registrada nesta data.'}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -685,7 +695,7 @@ export default function AlunosPage() {
           </div>
         </div>
 
-        {justificationStudent && (
+        {isGestao && justificationStudent && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             onClick={closeJustificationModal}
@@ -826,7 +836,7 @@ export default function AlunosPage() {
               <p className="text-xs text-slate-400 mb-4">
                 QR Code contém o ID único do aluno no banco de dados
               </p>
-              {qrContextStudent && !qrContextStudent.isPresent && !qrContextStudent.earlyExitTime ? (
+              {isGestao && qrContextStudent && !qrContextStudent.isPresent && !qrContextStudent.earlyExitTime ? (
                 <Button
                   variant="outline"
                   className="mb-3 w-full"
@@ -840,7 +850,7 @@ export default function AlunosPage() {
                     : 'Justificar ausência'}
                 </Button>
               ) : null}
-              {qrContextStudent && qrContextStudent.earlyExitTime ? (
+              {isGestao && qrContextStudent && qrContextStudent.earlyExitTime ? (
                 <Button
                   variant="outline"
                   className="mb-3 w-full"
@@ -862,6 +872,13 @@ export default function AlunosPage() {
         )}
         </div>
       </div>
+  );
+}
+
+export default function AlunosPage() {
+  return (
+    <ProtectedLayout requiredRole={['gestao', 'servidores']}>
+      <AlunosDashboard />
     </ProtectedLayout>
   );
 }

@@ -5,6 +5,7 @@ import { getAttendanceModel } from '@/lib/models/Attendance';
 import { getPresenceModel } from '@/lib/models/Presence';
 import { resolveStudent } from '@/lib/local-students';
 import { getTodayString } from '@/lib/utils';
+import { getRoleFromAccessKeyHeader } from '@/lib/iema-auth';
 
 const STATUS_LOCK_WINDOW_MS = 5 * 60 * 1000;
 
@@ -55,6 +56,13 @@ export async function POST(req: NextRequest) {
   const isPresenceFromToday = currentPresenceDate === today;
   const currentlyPresent = isPresenceFromToday && Boolean(currentPresence?.isPresent);
   const type = currentlyPresent ? 'exit' : 'entry';
+  const requesterRole = getRoleFromAccessKeyHeader(req);
+  if (type === 'exit' && requesterRole !== 'gestao') {
+    return NextResponse.json(
+      { error: 'Não foi possível registrar a saída com este acesso.' },
+      { status: 403 }
+    );
+  }
   const now = new Date();
   const lastStatusUpdate =
     isPresenceFromToday && currentPresence?.updatedAt instanceof Date

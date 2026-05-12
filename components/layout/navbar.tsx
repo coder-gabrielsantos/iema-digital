@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
+import { iemaKeyHeaders } from '@/lib/client-iema-key';
 
 interface NavItem {
   href: string;
@@ -21,9 +22,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/alunos', label: 'Painel', roles: ['admin'] },
-  { href: '/portaria', label: 'Portaria', roles: ['admin', 'portaria'] },
-  { href: '/cantina', label: 'Cantina', roles: ['admin', 'cantina'] },
+  { href: '/alunos', label: 'Dashboard', roles: ['gestao', 'servidores'] },
+  { href: '/portaria', label: 'Portaria', roles: ['gestao', 'servidores'] },
+  { href: '/cantina', label: 'Cantina', roles: ['gestao', 'servidores'] },
 ];
 
 interface StudentCard {
@@ -53,7 +54,7 @@ export function Navbar({ role }: NavbarProps) {
     setDownloadingCards(true);
 
     try {
-      const res = await fetch('/api/student-cards');
+      const res = await fetch('/api/student-cards', { headers: iemaKeyHeaders() });
       if (!res.ok) {
         throw new Error(`Falha ao carregar cartões (HTTP ${res.status})`);
       }
@@ -85,7 +86,7 @@ export function Navbar({ role }: NavbarProps) {
   }
 
   const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
-  const canDownloadCards = role === 'admin';
+  const canDownloadCards = role === 'gestao';
 
   return (
     <>

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectPlatformDB } from '@/lib/mongodb-connections';
 import { getAbsenceJustificationModel } from '@/lib/models/AbsenceJustification';
+import { getRoleFromAccessKeyHeader } from '@/lib/iema-auth';
 
 const MAX_JUSTIFICATION_LENGTH = 1000;
 
 export async function POST(req: NextRequest) {
+  if (getRoleFromAccessKeyHeader(req) !== 'gestao') {
+    return NextResponse.json({ error: 'Sem permissão para alterar justificativas.' }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const studentId = normalizeString(body.studentId);
@@ -57,6 +61,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  if (getRoleFromAccessKeyHeader(req) !== 'gestao') {
+    return NextResponse.json({ error: 'Sem permissão para alterar justificativas.' }, { status: 403 });
+  }
   try {
     const body = await req.json();
     const studentId = normalizeString(body.studentId);

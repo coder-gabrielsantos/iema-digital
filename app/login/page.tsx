@@ -7,6 +7,7 @@ import AuthSplitShell from '@/components/auth-split-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { readStoredRole } from '@/lib/stored-role';
 
 function fieldClass(dark?: boolean) {
   return cn(
@@ -121,10 +122,8 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem('iema_role');
-    if (role === 'admin') router.replace('/alunos');
-    else if (role === 'portaria') router.replace('/portaria');
-    else if (role === 'cantina') router.replace('/cantina');
+    const role = readStoredRole();
+    if (role === 'gestao' || role === 'servidores') router.replace('/alunos');
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -149,9 +148,7 @@ export default function LoginPage() {
       localStorage.setItem('iema_role', data.role);
       localStorage.setItem('iema_key', data.key);
 
-      if (data.role === 'admin') router.push('/alunos');
-      else if (data.role === 'portaria') router.push('/portaria');
-      else if (data.role === 'cantina') router.push('/cantina');
+      if (data.role === 'gestao' || data.role === 'servidores') router.push('/alunos');
     } catch {
       setError('Erro de conexão. Tente novamente.');
     } finally {

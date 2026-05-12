@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectStudentsDB } from '@/lib/mongodb-connections';
 import { getStudentModel } from '@/lib/models/Student';
 import { getLocalFallbackStudents, serializeDbStudent } from '@/lib/local-students';
+import { getRoleFromAccessKeyHeader } from '@/lib/iema-auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (getRoleFromAccessKeyHeader(req) !== 'gestao') {
+    return NextResponse.json({ error: 'Acesso não autorizado.' }, { status: 403 });
+  }
   try {
     const studentsConn = await connectStudentsDB();
     const Student = getStudentModel(studentsConn);
