@@ -18,8 +18,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { StudentPhoto } from '@/components/ui/student-photo';
-import { formatTime } from '@/lib/utils';
+import { cn, formatTime } from '@/lib/utils';
 import { iemaKeyHeaders } from '@/lib/client-iema-key';
 
 interface Student {
@@ -97,6 +98,51 @@ function parseDateString(dateString: string) {
   return new Date(year, (month || 1) - 1, day || 1);
 }
 
+function PresenceSwitch({
+  student,
+  busy,
+  onPresent,
+  onEarlyExit,
+}: {
+  student: Student;
+  busy: boolean;
+  onPresent: () => void;
+  onEarlyExit: () => void;
+}) {
+  const isEarly = Boolean(student.earlyExitTime);
+
+  return (
+    <div className="flex w-full items-center gap-3 rounded-md border border-slate-200 bg-slate-50/90 px-3 py-3">
+      <span
+        className={cn(
+          'min-w-0 flex-1 text-sm',
+          !isEarly ? 'font-semibold text-slate-900' : 'text-slate-500'
+        )}
+      >
+        Presente
+      </span>
+      <Switch
+        checked={isEarly}
+        onCheckedChange={(checked) => {
+          if (busy) return;
+          if (checked) onEarlyExit();
+          else onPresent();
+        }}
+        disabled={busy}
+        aria-label="Alternar entre presente e saída antecipada"
+      />
+      <span
+        className={cn(
+          'min-w-0 flex-1 text-right text-sm',
+          isEarly ? 'font-semibold text-slate-900' : 'text-slate-500'
+        )}
+      >
+        Saída antecipada
+      </span>
+    </div>
+  );
+}
+
 function AlunosDashboard() {
   const viewerRole = useViewerRole();
   const isGestao = viewerRole === 'gestao';
@@ -125,6 +171,7 @@ function AlunosDashboard() {
   const [savingJustification, setSavingJustification] = useState(false);
   const [deletingJustification, setDeletingJustification] = useState(false);
   const [justificationError, setJustificationError] = useState('');
+  const [presenceActionId, setPresenceActionId] = useState<string | null>(null);
 
   const normalizedSearch = search.trim().toLowerCase();
   const visibleStudents = useMemo(() => {
@@ -197,6 +244,37 @@ function AlunosDashboard() {
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchStudents(page), fetchDashboard()]);
   }, [fetchStudents, fetchDashboard, page]);
+
+  useEffect(() => {
+    setQrContextStudent((prev) => {
+      if (!prev) return prev;
+      const next = students.find((s) => s._id === prev._id);
+      return next ?? prev;
+    });
+  }, [students]);
+
+  const applyPresenceTarget = useCallback(
+    async (student: Student, target: 'present' | 'early-exit') => {
+      setPresenceActionId(student._id);
+      try {
+        const res = await fetch('/api/student-presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...iemaKeyHeaders() },
+          body: JSON.stringify({ studentId: student._id, targetStatus: target }),
+        });
+        const data: { error?: string } = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Não foi possível atualizar o status.');
+        }
+        await refreshAll();
+      } catch (e) {
+        window.alert(e instanceof Error ? e.message : 'Erro ao atualizar o status.');
+      } finally {
+        setPresenceActionId(null);
+      }
+    },
+    [refreshAll]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -606,7 +684,7 @@ function AlunosDashboard() {
               <div className="divide-y divide-slate-300">
                 <div className="hidden md:grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 px-6 py-3 text-xs font-medium uppercase tracking-wide text-slate-400">
                   <span>Aluno</span>
-                  <span>Status / Ação</span>
+                  <span>Status</span>
                 </div>
                 {visibleStudents.map((student) => (
                   <div
@@ -836,6 +914,19 @@ function AlunosDashboard() {
               <p className="text-xs text-slate-400 mb-4">
                 QR Code contém o ID único do aluno no banco de dados
               </p>
+              {isGestao &&
+              isSelectedDateToday &&
+              qrContextStudent &&
+              (qrContextStudent.isPresent || qrContextStudent.earlyExitTime) ? (
+                <div className="mb-4">
+                  <PresenceSwitch
+                    student={qrContextStudent}
+                    busy={presenceActionId === qrContextStudent._id}
+                    onPresent={() => void applyPresenceTarget(qrContextStudent, 'present')}
+                    onEarlyExit={() => void applyPresenceTarget(qrContextStudent, 'early-exit')}
+                  />
+                </div>
+              ) : null}
               {isGestao && qrContextStudent && !qrContextStudent.isPresent && !qrContextStudent.earlyExitTime ? (
                 <Button
                   variant="outline"
