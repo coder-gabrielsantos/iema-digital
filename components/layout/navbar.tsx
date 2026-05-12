@@ -2,6 +2,8 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import logo from '@/app/util/logo.png';
 import {
   LogOut,
   Menu,
@@ -90,7 +92,12 @@ export function Navbar({ role }: NavbarProps) {
       <header className="fixed left-0 right-0 top-0 z-40 h-16 border-b border-slate-200/80 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-full w-full max-w-7xl items-center px-4 md:px-6">
           <Link href="/" className="flex shrink-0 items-center">
-            <span className="text-xl font-semibold tracking-tight text-slate-900 md:text-2xl">IEMA Digital</span>
+            <Image
+              src={logo}
+              alt="IEMA Digital"
+              priority
+              className="h-9 w-auto md:h-10"
+            />
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
