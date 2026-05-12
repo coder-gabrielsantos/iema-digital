@@ -76,10 +76,11 @@ const FILTER_SELECT_STYLES = {
   dropdownIndicator: (base: object) => ({ ...base, color: '#64748b' }),
   menu: (base: object) => ({
     ...base,
-    zIndex: 20,
+    zIndex: 50,
     borderRadius: '0.375rem',
     overflow: 'hidden',
   }),
+  menuPortal: (base: object) => ({ ...base, zIndex: 9999 }),
 };
 
 /** ~5 opções visíveis; 190px cortava a 5ª linha (opções ~40–44px). */
@@ -535,6 +536,8 @@ export default function AlunosPage() {
                     }}
                     classNamePrefix="students-filter"
                     styles={FILTER_SELECT_STYLES}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                    menuPosition="fixed"
                   />
                 </div>
                 <div className="w-full sm:w-64">
@@ -554,6 +557,8 @@ export default function AlunosPage() {
                     classNamePrefix="students-class-filter"
                     styles={FILTER_SELECT_STYLES}
                     noOptionsMessage={() => 'Nenhuma turma'}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                    menuPosition="fixed"
                   />
                 </div>
                 <div className="relative w-full sm:w-72">

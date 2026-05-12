@@ -96,15 +96,12 @@ export function ManualStudentEntryForm({
           Buscar aluno
         </CardTitle>
         <CardDescription className="text-xs leading-snug text-slate-500">
-          Mínimo 2 letras, escolha na lista e Verificar para {contextHint}.
+          Digite ao menos 2 letras, selecione o aluno na lista e clique em Verificar para {contextHint}.
         </CardDescription>
       </CardHeader>
       <CardContent className="bg-slate-50/40 px-4 py-4 sm:px-5 sm:py-5">
-        <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
+        <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
           <div className="min-w-0 flex-1">
-            <label htmlFor={inputId} className="mb-1.5 block text-xs font-medium text-slate-600">
-              Nome ou turma
-            </label>
             <AsyncSelect<ManualStudentOption, false>
               inputId={inputId}
               aria-label="Pesquisar alunos"
@@ -114,7 +111,7 @@ export function ManualStudentEntryForm({
               loadOptions={loadOptions}
               value={value}
               onChange={onChange}
-              placeholder="Comece a digitar para buscar…"
+              placeholder="Informe o nome do aluno"
               noOptionsMessage={() => 'Nenhum aluno encontrado'}
               loadingMessage={() => 'Buscando…'}
               classNamePrefix={classNamePrefix}
