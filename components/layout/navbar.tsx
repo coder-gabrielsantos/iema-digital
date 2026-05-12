@@ -22,7 +22,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/alunos', label: 'Dashboard', roles: ['gestao', 'servidores'] },
+  { href: '/alunos', label: 'Painel', roles: ['gestao', 'servidores'] },
   { href: '/portaria', label: 'Portaria', roles: ['gestao', 'servidores'] },
   { href: '/cantina', label: 'Cantina', roles: ['gestao', 'servidores'] },
 ];
@@ -112,7 +112,7 @@ export function Navbar({ role }: NavbarProps) {
                   className={cn(
                     'flex w-[5.5rem] shrink-0 items-center justify-center whitespace-nowrap px-2 py-1.5 text-center text-sm font-medium transition-colors duration-200',
                     active
-                      ? 'border-b-2 border-slate-900 text-slate-900'
+                      ? 'border-b-2 border-black text-slate-900'
                       : 'border-b-2 border-transparent text-slate-600 hover:border-slate-400 hover:text-slate-900'
                   )}
                 >

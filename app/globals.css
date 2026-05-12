@@ -66,11 +66,13 @@ input[type='password']::-ms-clear {
   display: none;
 }
 
-* {
-  box-sizing: border-box;
-  border-color: var(--border);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.55) rgba(2, 6, 23, 0);
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.55) rgba(2, 6, 23, 0);
+  }
 }
 
 *::-webkit-scrollbar {

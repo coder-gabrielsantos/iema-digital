@@ -479,7 +479,7 @@ function AlunosDashboard() {
         <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Painel</h1>
             <p className="mt-1 text-sm text-slate-500">
               {isSelectedDateToday
                 ? 'Presença e indicadores atualizados ao longo do dia.'
