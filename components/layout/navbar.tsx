@@ -101,7 +101,7 @@ export function Navbar({ role }: NavbarProps) {
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav className="hidden items-stretch gap-1 md:flex">
             {visibleItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -109,10 +109,10 @@ export function Navbar({ role }: NavbarProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center px-3 py-2 text-sm font-medium transition-colors duration-200',
+                    'flex w-[5.5rem] shrink-0 items-center justify-center whitespace-nowrap px-2 py-1.5 text-center text-sm font-medium transition-colors duration-200',
                     active
-                      ? 'text-slate-900 underline decoration-slate-900 decoration-2 underline-offset-8'
-                      : 'text-slate-600 hover:text-slate-900 hover:underline hover:decoration-slate-400 hover:decoration-2 hover:underline-offset-8'
+                      ? 'border-b-2 border-slate-900 text-slate-900'
+                      : 'border-b-2 border-transparent text-slate-600 hover:border-slate-400 hover:text-slate-900'
                   )}
                 >
                   {item.label}
@@ -163,8 +163,16 @@ export function Navbar({ role }: NavbarProps) {
       </header>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-30 bg-slate-900/20 pt-16 md:hidden">
-          <nav className="mx-4 mt-3 space-y-1.5 rounded-md border border-slate-200 bg-white p-2.5 shadow-sm animate-in slide-in-from-top-1 fade-in duration-200">
+        <div
+          className="fixed inset-0 z-30 flex flex-col items-end bg-slate-900/25 pt-16 backdrop-blur-[3px] md:hidden"
+          onClick={() => setMobileOpen(false)}
+          role="presentation"
+        >
+          <nav
+            className="mr-4 mt-3 flex w-[min(15rem,calc(100vw-2rem))] flex-col gap-1 rounded-xl border border-slate-200/90 bg-white/98 p-2.5 shadow-premium-lg animate-in slide-in-from-top-1 fade-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Menu principal"
+          >
             {visibleItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -173,10 +181,10 @@ export function Navbar({ role }: NavbarProps) {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    'flex items-center px-3.5 py-2.5 text-sm font-medium transition-colors duration-150',
+                    'flex items-center rounded-lg px-3.5 py-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2',
                     active
-                      ? 'text-slate-900 underline decoration-slate-900 decoration-2 underline-offset-8'
-                      : 'text-slate-700 hover:text-slate-900 hover:underline hover:decoration-slate-400 hover:decoration-2 hover:underline-offset-8'
+                      ? 'bg-slate-100 text-slate-900 shadow-sm ring-1 ring-slate-200/80'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   )}
                 >
                   {item.label}
@@ -184,15 +192,23 @@ export function Navbar({ role }: NavbarProps) {
               );
             })}
             {canDownloadCards ? (
-              <button
-                type="button"
-                onClick={() => void handleDownloadCards()}
-                disabled={downloadingCards}
-                className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-wait disabled:opacity-55"
-              >
-                {downloadingCards ? 'Gerando...' : 'QR-code'}
-                <QrCode className="h-4 w-4" />
-              </button>
+              <>
+                <div
+                  className="my-1.5 h-px shrink-0 bg-gradient-to-r from-transparent via-slate-200 to-transparent"
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleDownloadCards()}
+                  disabled={downloadingCards}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3.5 py-3 text-left text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-55"
+                >
+                  <QrCode className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    {downloadingCards ? 'Gerando...' : 'QR-code'}
+                  </span>
+                </button>
+              </>
             ) : null}
           </nav>
         </div>
