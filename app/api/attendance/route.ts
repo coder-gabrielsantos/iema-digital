@@ -7,7 +7,7 @@ import { resolveStudent } from '@/lib/local-students';
 import { getTodayString } from '@/lib/utils';
 import { getRoleFromAccessKeyHeader } from '@/lib/iema-auth';
 
-const STATUS_LOCK_WINDOW_MS = 5 * 60 * 1000;
+const STATUS_LOCK_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   const [studentsConn, platformConn] = await Promise.all([

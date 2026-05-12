@@ -110,7 +110,7 @@ export default function PortariaPage() {
                     error:
                       data.error ||
                       (data.blockedByTimeWindow
-                        ? 'Aguarde 5 minutos para alterar o status novamente'
+                        ? 'Aguarde 15 minutos para alterar o status novamente'
                         : 'Erro'),
                   }
             )
