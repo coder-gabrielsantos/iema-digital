@@ -94,23 +94,39 @@ export async function GET(req: NextRequest) {
       .filter((student) => !student.isLocalFallback)
       .map((student) => student._id);
     const pageStudentIds = pageItems.map((student) => student._id.toString());
-    const [pagePhotos, absenceJustifications, earlyExitJustifications] = await Promise.all([
-      Student.find({ _id: { $in: pageDbIds } })
-        .select('_id photoData')
-        .lean(),
-      AbsenceJustification.find({
-        studentId: { $in: pageStudentIds },
-        date: selectedDate,
-      })
-        .select('studentId justification')
-        .lean(),
-      EarlyExitJustification.find({
-        studentId: { $in: pageStudentIds },
-        date: selectedDate,
-      })
-        .select('studentId justification')
-        .lean(),
-    ]);
+    const [pagePhotos, absenceJustifications, earlyExitJustifications, entryRecords] =
+      await Promise.all([
+        Student.find({ _id: { $in: pageDbIds } })
+          .select('_id photoData')
+          .lean(),
+        AbsenceJustification.find({
+          studentId: { $in: pageStudentIds },
+          date: selectedDate,
+        })
+          .select('studentId justification')
+          .lean(),
+        EarlyExitJustification.find({
+          studentId: { $in: pageStudentIds },
+          date: selectedDate,
+        })
+          .select('studentId justification')
+          .lean(),
+        Attendance.find({
+          studentId: { $in: pageStudentIds },
+          date: selectedDate,
+          type: 'entry',
+        })
+          .select('studentId timestamp')
+          .sort({ timestamp: 1 })
+          .lean(),
+      ]);
+    const entryTimeMap = new Map<string, string>();
+    for (const record of entryRecords) {
+      const sid = String(record.studentId);
+      if (entryTimeMap.has(sid)) continue;
+      const ts = record.timestamp;
+      entryTimeMap.set(sid, new Date(ts).toISOString());
+    }
     const photoMap = new Map(pagePhotos.map((student) => [student._id.toString(), student.photoData]));
     const justificationMap = new Map(
       absenceJustifications.map((item) => [item.studentId, item.justification])
@@ -125,6 +141,7 @@ export async function GET(req: NextRequest) {
         : photoMap.get(student._id.toString()) || '',
       absenceJustification: justificationMap.get(student._id.toString()) || '',
       earlyExitJustification: earlyExitJustificationMap.get(student._id.toString()) || '',
+      entryTime: entryTimeMap.get(student._id.toString()),
     }));
 
     return NextResponse.json({

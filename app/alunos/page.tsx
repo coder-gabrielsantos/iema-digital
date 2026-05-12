@@ -31,6 +31,7 @@ interface Student {
   photoData?: string;
   isPresent: boolean;
   earlyExitTime?: string;
+  entryTime?: string;
   absenceJustification?: string;
   earlyExitJustification?: string;
 }
@@ -112,32 +113,34 @@ function PresenceSwitch({
   const isEarly = Boolean(student.earlyExitTime);
 
   return (
-    <div className="flex w-full items-center gap-3 rounded-md border border-slate-200 bg-slate-50/90 px-3 py-3">
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-md border border-slate-200 bg-slate-50/90 px-3 py-3">
       <span
         className={cn(
-          'min-w-0 flex-1 text-sm',
+          'min-w-0 justify-self-start text-sm',
           !isEarly ? 'font-semibold text-slate-900' : 'text-slate-500'
         )}
       >
         Presente
       </span>
-      <Switch
-        checked={isEarly}
-        onCheckedChange={(checked) => {
-          if (busy) return;
-          if (checked) onEarlyExit();
-          else onPresent();
-        }}
-        disabled={busy}
-        aria-label="Alternar entre presente e saída antecipada"
-      />
+      <div className="flex justify-center">
+        <Switch
+          checked={isEarly}
+          onCheckedChange={(checked) => {
+            if (busy) return;
+            if (checked) onEarlyExit();
+            else onPresent();
+          }}
+          disabled={busy}
+          aria-label="Alternar entre presente e ausente"
+        />
+      </div>
       <span
         className={cn(
-          'min-w-0 flex-1 text-right text-sm',
+          'min-w-0 justify-self-end text-right text-sm',
           isEarly ? 'font-semibold text-slate-900' : 'text-slate-500'
         )}
       >
-        Saída antecipada
+        Ausente
       </span>
     </div>
   );
@@ -666,12 +669,18 @@ function AlunosDashboard() {
             {loading ? (
               <div className="divide-y divide-slate-300">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center gap-4 px-6 py-4">
-                    <div className="h-10 w-10 rounded-full bg-slate-200 animate-pulse" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-48 bg-slate-200 rounded animate-pulse" />
-                      <div className="h-3 w-24 bg-slate-100 rounded animate-pulse" />
+                  <div
+                    key={i}
+                    className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 md:gap-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-200 animate-pulse" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="h-4 max-w-48 bg-slate-200 rounded animate-pulse" />
+                        <div className="h-3 max-w-24 bg-slate-100 rounded animate-pulse" />
+                      </div>
                     </div>
+                    <div className="h-6 w-full rounded-md bg-slate-200 animate-pulse" />
                   </div>
                 ))}
               </div>
@@ -682,14 +691,14 @@ function AlunosDashboard() {
               </div>
             ) : (
               <div className="divide-y divide-slate-300">
-                <div className="hidden md:grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 px-6 py-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+                <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_8rem] md:gap-4 border-b border-slate-200 px-6 py-3 text-xs font-medium uppercase tracking-wide text-slate-400">
                   <span>Aluno</span>
-                  <span>Status</span>
+                  <span className="text-center">Status</span>
                 </div>
                 {visibleStudents.map((student) => (
                   <div
                     key={student._id}
-                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-white px-4 py-3 hover:bg-slate-50 sm:px-6 sm:py-4 md:grid-cols-[1fr_auto] md:gap-4"
+                    className="grid w-full grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 bg-white px-4 py-3 hover:bg-slate-50 sm:px-6 sm:py-4 md:gap-4"
                   >
                     <button
                       type="button"
@@ -713,30 +722,46 @@ function AlunosDashboard() {
                         </p>
                       </div>
                     </button>
-                    <div className="justify-self-start md:justify-self-end">
+                    <div className="w-full min-w-0">
                       {student.earlyExitTime ? (
                         student.earlyExitJustification ? (
-                          <Badge variant="outline" className="w-fit">
-                            Saída antecipada justificada
-                            <span className="ml-1 font-normal text-slate-500">
-                              ({formatTime(student.earlyExitTime)})
-                            </span>
+                          <Badge
+                            variant="outline"
+                            className="w-full min-w-0 justify-center truncate text-center"
+                          >
+                            Saída justificada às {formatTime(student.earlyExitTime)}
                           </Badge>
                         ) : (
-                          <Badge variant="warning" className="w-fit">
-                            Saída antecipada às {formatTime(student.earlyExitTime)}
+                          <Badge
+                            variant="warning"
+                            className="w-full min-w-0 justify-center truncate text-center"
+                          >
+                            Saída às {formatTime(student.earlyExitTime)}
                           </Badge>
                         )
                       ) : student.isPresent ? (
-                        <Badge variant="success" className="w-fit">
-                          {isSelectedDateToday ? 'Presente' : 'Com frequência'}
+                        <Badge
+                          variant="success"
+                          className="w-full min-w-0 justify-center truncate text-center"
+                        >
+                          {student.entryTime
+                            ? `Entrada às ${formatTime(student.entryTime)}`
+                            : isSelectedDateToday
+                              ? 'Presente'
+                              : 'Com frequência'}
                         </Badge>
                       ) : student.absenceJustification ? (
-                        <Badge variant="outline" className="w-fit">
+                        <Badge
+                          variant="outline"
+                          className="w-full min-w-0 justify-center truncate text-center"
+                        >
                           Ausência justificada
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="w-fit">
+                        <Badge
+                          variant="secondary"
+                          className="w-full min-w-0 justify-center truncate text-center"
+                        >
                           {isSelectedDateToday ? 'Ausente' : 'Sem frequência'}
                         </Badge>
                       )}
