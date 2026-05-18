@@ -6,7 +6,9 @@ import { getPresenceModel } from '@/lib/models/Presence';
 import { getAbsenceJustificationModel } from '@/lib/models/AbsenceJustification';
 import { getEarlyExitJustificationModel } from '@/lib/models/EarlyExitJustification';
 import {
+  type AppStudent,
   getLocalFallbackStudents,
+  getStudentKey,
   mergeClassCodes,
   serializeDbStudent,
 } from '@/lib/local-students';
@@ -54,10 +56,10 @@ export async function GET(req: NextRequest) {
       allDbStudents.map(serializeDbStudent),
       { search: '', classCode: classCodeFilter }
     );
-    const students = [
+    const students = dedupeStudentsByIdentity([
       ...dbStudents.map(serializeDbStudent),
       ...localStudents,
-    ].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    ]).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
     const normalizedSearch = normalizeSearchText(search);
     const searchableStudents = normalizedSearch
       ? students.filter((student) => normalizeSearchText(student.name).includes(normalizedSearch))
@@ -169,6 +171,21 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function dedupeStudentsByIdentity(students: AppStudent[]) {
+  const seenKeys = new Set<string>();
+  const deduped: AppStudent[] = [];
+
+  for (const student of students) {
+    const key = getStudentKey(student);
+    if (seenKeys.has(key)) continue;
+
+    seenKeys.add(key);
+    deduped.push(student);
+  }
+
+  return deduped;
 }
 
 function normalizeDate(date: string | null): string | null {
